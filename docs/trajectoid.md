@@ -100,3 +100,4 @@ VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
 ```
 
 JSON sidecar: [`figures/trajectoid_backend_spectra.json`](figures/trajectoid_backend_spectra.json).
+The Meep extras record `layout`, `resolution`, `cell_size`, `n_pixels`, `pml`, and monitor positions so a later “why is purity 0.44?” is answered from that file.

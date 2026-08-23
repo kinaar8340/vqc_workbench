@@ -11,12 +11,21 @@ is annotated as unavailable.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from vqc_workbench import Workbench
 from vqc_workbench.core.config import workbench_root
 from vqc_workbench.simulation.fullwave import FullWaveUnavailable
 from vqc_workbench.ui.visualizers import plot_backend_spectra
+
+
+def _jsonable(value):
+    if isinstance(value, (str, int, float, bool, type(None))):
+        return value
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return str(value)
 
 
 def _summary(result) -> dict:
@@ -26,7 +35,7 @@ def _summary(result) -> dict:
         "dominant_ell": int(result.dominant_ell()),
         "expectation_ell": float(result.expectation_ell()),
         "purity": purity,
-        "extras": {k: v for k, v in result.extras.items() if isinstance(v, (str, int, float, bool, type(None)))},
+        "extras": _jsonable(result.extras),
     }
 
 
@@ -64,6 +73,16 @@ def main() -> int:
     payload = {
         "expected_ell": expected,
         "formula": wb.forecast_charge(shell).formula,
+        "run": {
+            "n_trenches": 8,
+            "winding": 2,
+            "L_max": kw["L_max"],
+            "grid_size": kw["grid_size"],
+            "extent": kw["extent"],
+            "w0": kw["w0"],
+            "meep_resolution": 16,
+            "meep_layout": "source_imprint",
+        },
         "backends": [_summary(r) for r in results],
         "unavailable": notes,
     }

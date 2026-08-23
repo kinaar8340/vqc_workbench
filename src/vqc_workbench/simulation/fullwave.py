@@ -377,9 +377,11 @@ class MeepBackend(FullWaveBackend):
                 w0=float(w0),
                 extent=float(extent),
                 resolution=int(resolution),
+                grid_size=int(grid_size),
             )
         ny, nx = mask.shape
-        sx = sy = 2.0 * float(extent)
+        res = int(resolution)
+        sx = sy = _snap_cell(2.0 * float(extent), res)
         # Thin phase plate in 3-D: Δn · d = φ λ / 2π  (λ = 1 Meep unit).
         d = 0.5
         lam = 1.0
@@ -390,7 +392,7 @@ class MeepBackend(FullWaveBackend):
         eps_max = float(np.max(eps))
         weights = np.clip((eps - eps_min) / max(eps_max - eps_min, 1e-9), 0.0, 1.0)
         weights_mg = np.ascontiguousarray(weights.T.astype(np.float64))
-        sz = 4.0
+        sz = _snap_cell(4.0, res)
         pml = 0.6
         z_src = -0.9
         z_mon = 0.9
@@ -448,13 +450,19 @@ class MeepBackend(FullWaveBackend):
             L_max=int(L_max),
             w0=w0,
             backend="meep",
-            extras={
-                "resolution": int(resolution),
-                "meep_version": getattr(mp, "__version__", None),
-                "kind": structure.kind,
-                "layout": "thin_plate_3d",
-                "slab_thickness": d,
-            },
+            extras=_meep_run_meta(
+                layout="thin_plate_3d",
+                resolution=res,
+                cell=(sx, sy, sz),
+                grid_size=int(nx),
+                extent=float(extent),
+                pml=pml,
+                z_src=z_src,
+                z_mon=z_mon,
+                kind=structure.kind,
+                meep_version=getattr(mp, "__version__", None),
+                extra={"slab_thickness": d},
+            ),
         )
 
     def _run_meep_source_imprint(
@@ -469,6 +477,7 @@ class MeepBackend(FullWaveBackend):
         w0: float,
         extent: float,
         resolution: int,
+        grid_size: int,
     ) -> FullWaveResult:
         """Vacuum 3-D FDTD whose source is Gaussian × thin-element mask.
 
@@ -478,8 +487,9 @@ class MeepBackend(FullWaveBackend):
         """
         from scipy.interpolate import RegularGridInterpolator
 
-        sx = sy = 2.0 * float(extent)
-        sz = 3.6
+        res = int(resolution)
+        sx = sy = _snap_cell(2.0 * float(extent), res)
+        sz = _snap_cell(3.6, res)
         pml = 0.5
         z_src = -0.7
         z_mon = 0.7
@@ -534,13 +544,62 @@ class MeepBackend(FullWaveBackend):
             L_max=int(L_max),
             w0=w0,
             backend="meep",
-            extras={
-                "resolution": int(resolution),
-                "meep_version": getattr(mp, "__version__", None),
-                "kind": structure.kind,
-                "layout": "source_imprint",
-            },
+            extras=_meep_run_meta(
+                layout="source_imprint",
+                resolution=res,
+                cell=(sx, sy, sz),
+                grid_size=int(grid_size),
+                extent=float(extent),
+                pml=pml,
+                z_src=z_src,
+                z_mon=z_mon,
+                kind=structure.kind,
+                meep_version=getattr(mp, "__version__", None),
+            ),
         )
+
+
+def _snap_cell(size: float, resolution: int) -> float:
+    """Round a Meep cell length so volume is an integer number of pixels."""
+    res = int(resolution)
+    return float(round(float(size) * res) / res)
+
+
+def _meep_run_meta(
+    *,
+    layout: str,
+    resolution: int,
+    cell: tuple[float, float, float],
+    grid_size: int,
+    extent: float,
+    pml: float,
+    z_src: float,
+    z_mon: float,
+    kind: str,
+    meep_version: str | None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    sx, sy, sz = cell
+    meta = {
+        "layout": layout,
+        "resolution": int(resolution),
+        "cell_size": {"sx": sx, "sy": sy, "sz": sz},
+        "n_pixels": {
+            "nx": int(round(sx * resolution)),
+            "ny": int(round(sy * resolution)),
+            "nz": int(round(sz * resolution)),
+        },
+        "grid_size": int(grid_size),
+        "extent": float(extent),
+        "pml": float(pml),
+        "z_src": float(z_src),
+        "z_mon": float(z_mon),
+        "kind": kind,
+        "meep_version": meep_version,
+    }
+    if extra:
+        meta.update(extra)
+    return meta
 
 
 def _resample_complex(src: NDArray[np.complex128], shape: tuple[int, int]) -> NDArray[np.complex128]:
