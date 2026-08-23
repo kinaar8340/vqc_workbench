@@ -378,12 +378,15 @@ class MeepBackend(FullWaveBackend):
                 extent=float(extent),
                 resolution=int(resolution),
                 grid_size=int(grid_size),
+                pml=float(kwargs.get("pml", 0.5)),
+                sz=float(kwargs.get("sz", 3.6)),
+                until=float(kwargs.get("until", 20)),
             )
         ny, nx = mask.shape
         res = int(resolution)
         sx = sy = _snap_cell(2.0 * float(extent), res)
         # Thin phase plate in 3-D: Δn · d = φ λ / 2π  (λ = 1 Meep unit).
-        d = 0.5
+        d = float(kwargs.get("slab_thickness", 0.5))
         lam = 1.0
         delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
         n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
@@ -392,10 +395,12 @@ class MeepBackend(FullWaveBackend):
         eps_max = float(np.max(eps))
         weights = np.clip((eps - eps_min) / max(eps_max - eps_min, 1e-9), 0.0, 1.0)
         weights_mg = np.ascontiguousarray(weights.T.astype(np.float64))
-        sz = _snap_cell(4.0, res)
-        pml = 0.6
-        z_src = -0.9
-        z_mon = 0.9
+        pml = float(kwargs.get("pml", 1.2))
+        sz = _snap_cell(float(kwargs.get("sz", 8.0)), res)
+        until = float(kwargs.get("until", 40))
+        # Source and monitor sit in vacuum, outside the slab, inside the PML-free core.
+        z_src = -min(0.35 * sz, sz / 2.0 - pml - 0.2)
+        z_mon = -z_src
         w0 = float(w0)
 
         def _amp(p):
@@ -433,7 +438,7 @@ class MeepBackend(FullWaveBackend):
             )
             dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
             dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
-            sim.run(until=24)
+            sim.run(until=until)
             ez = np.array(sim.get_dft_array(dft, mp.Ez, 0), dtype=np.complex128)
         except Exception as exc:
             raise FullWaveUnavailable(f"Meep FDTD run failed: {exc}") from exc
@@ -461,7 +466,7 @@ class MeepBackend(FullWaveBackend):
                 z_mon=z_mon,
                 kind=structure.kind,
                 meep_version=getattr(mp, "__version__", None),
-                extra={"slab_thickness": d},
+                extra={"slab_thickness": d, "until": until},
             ),
         )
 
@@ -478,6 +483,9 @@ class MeepBackend(FullWaveBackend):
         extent: float,
         resolution: int,
         grid_size: int,
+        pml: float = 0.5,
+        sz: float = 3.6,
+        until: float = 20,
     ) -> FullWaveResult:
         """Vacuum 3-D FDTD whose source is Gaussian × thin-element mask.
 
@@ -489,10 +497,10 @@ class MeepBackend(FullWaveBackend):
 
         res = int(resolution)
         sx = sy = _snap_cell(2.0 * float(extent), res)
-        sz = _snap_cell(3.6, res)
-        pml = 0.5
-        z_src = -0.7
-        z_mon = 0.7
+        sz = _snap_cell(float(sz), res)
+        pml = float(pml)
+        z_src = -min(0.7, sz / 2.0 - pml - 0.15)
+        z_mon = -z_src
         lam = 1.0
         field0 = gaussian_beam(x, y, w0=w0) * mask
         x_ax = np.asarray(x[0, :], dtype=float)
@@ -528,7 +536,7 @@ class MeepBackend(FullWaveBackend):
             )
             dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
             dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
-            sim.run(until=20)
+            sim.run(until=float(until))
             ez = np.array(sim.get_dft_array(dft, mp.Ez, 0), dtype=np.complex128)
         except Exception as trans_exc:
             raise FullWaveUnavailable(f"Meep FDTD run failed: {trans_exc}") from trans_exc
@@ -555,6 +563,7 @@ class MeepBackend(FullWaveBackend):
                 z_mon=z_mon,
                 kind=structure.kind,
                 meep_version=getattr(mp, "__version__", None),
+                extra={"until": float(until)},
             ),
         )
 

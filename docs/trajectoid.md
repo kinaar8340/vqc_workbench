@@ -89,15 +89,40 @@ The first full-wave proof is a three-column OAM spectrum on this same cell
 Meep here is a **source-imprint** run: the plate is applied as a complex
 source, then the field is DFT-monitored after vacuum propagation. That is a
 real FDTD field going through the same OAM projector — not the analytic
-mask multiplied back in. A dielectric-slab layout (`layout=thin_plate_3d`)
-exists but needs much higher resolution to hold |ℓ| = 6.
+mask multiplied back in.
+
+### Resolution sweep (source-imprint)
+
+Purity and modal-cosine both climb with resolution; the dominant charge
+stays ℓ = −6 at every point.
+
+![Meep purity and cosine vs resolution](figures/trajectoid_meep_resolution_sweep.png)
+
+| res | Dominant ℓ | Purity | cosine vs modal | n_pixels (nx×ny×nz) |
+|-----|------------|--------|-----------------|---------------------|
+| 16 | −6 | 0.437 | 0.884 | 144×144×58 |
+| 20 | −6 | 0.517 | 0.905 | 180×180×72 |
+| 24 | −6 | 0.604 | 0.953 | 216×216×86 |
+| 32 | −6 | 0.734 | 0.986 | 288×288×115 |
+
+JSON: [`figures/trajectoid_meep_resolution_sweep.json`](figures/trajectoid_meep_resolution_sweep.json).
+
+### Dielectric slab (`thin_plate_3d`)
+
+Larger cell (extent 6, sz 8) and thicker PML (1.2) still **do not** recover
+ℓ = −6 at res=16: Meep peaks at ℓ = +8, cosine vs modal ≈ 0.08. The
+source-imprint path is the validated FDTD layout for this cell until the
+slab is run at substantially higher resolution.
 
 Regenerate:
 
 ```bash
 conda activate vqc-meep   # pymeep 1.34 from conda-forge
 VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
+VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py all
 ```
 
 JSON sidecar: [`figures/trajectoid_backend_spectra.json`](figures/trajectoid_backend_spectra.json).
 The Meep extras record `layout`, `resolution`, `cell_size`, `n_pixels`, `pml`, and monitor positions so a later “why is purity 0.44?” is answered from that file.
+
+Companion cells (spiral plate + slab details): [meep_validation.md](meep_validation.md).

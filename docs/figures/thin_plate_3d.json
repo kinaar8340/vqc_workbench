@@ -1,0 +1,186 @@
+{
+  "spiral": {
+    "expected_ell": 1,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": 1,
+        "expectation_ell": 0.9999869883746808,
+        "purity": 0.9999934942085031,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 4
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": 1,
+        "expectation_ell": 0.9999966234128208,
+        "purity": 0.9999983117078355,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 4,
+          "grid_size": 32
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": -4,
+        "expectation_ell": -1.222028207855629,
+        "purity": 0.3183963536064258,
+        "extras": {
+          "layout": "thin_plate_3d",
+          "resolution": 12,
+          "cell_size": {
+            "sx": 10.0,
+            "sy": 10.0,
+            "sz": 8.0
+          },
+          "n_pixels": {
+            "nx": 120,
+            "ny": 120,
+            "nz": 96
+          },
+          "grid_size": 32,
+          "extent": 5.0,
+          "pml": 1.2,
+          "z_src": -2.5999999999999996,
+          "z_mon": 2.5999999999999996,
+          "kind": "spiral_phase",
+          "meep_version": "1.34.0",
+          "slab_thickness": 0.5,
+          "until": 40.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.9999999999970989,
+        "dominant_match": true,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": 1
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.1510733704911924,
+        "dominant_match": false,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": -4
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.15107332387811126,
+        "dominant_match": false,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": -4
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.1510733704911924,
+      "dominant_match": false,
+      "dominant_ell_a": 1,
+      "dominant_ell_b": -4
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/spiral_thin_plate_spectra.png"
+  },
+  "trajectoid": {
+    "expected_ell": -6,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": -6,
+        "expectation_ell": -5.998080697701305,
+        "purity": 0.9996386860211628,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 8
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": -6,
+        "expectation_ell": -5.996590260141135,
+        "purity": 0.9993894343496974,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 8,
+          "grid_size": 40
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": 8,
+        "expectation_ell": 0.39021832839974957,
+        "purity": 0.49586723971550806,
+        "extras": {
+          "layout": "thin_plate_3d",
+          "resolution": 16,
+          "cell_size": {
+            "sx": 12.0,
+            "sy": 12.0,
+            "sz": 8.0
+          },
+          "n_pixels": {
+            "nx": 192,
+            "ny": 192,
+            "nz": 128
+          },
+          "grid_size": 40,
+          "extent": 6.0,
+          "pml": 1.2,
+          "z_src": -2.5999999999999996,
+          "z_mon": 2.5999999999999996,
+          "kind": "trajectoid",
+          "meep_version": "1.34.0",
+          "slab_thickness": 0.5,
+          "until": 40.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.9999999923193441,
+        "dominant_match": true,
+        "dominant_ell_a": -6,
+        "dominant_ell_b": -6
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.0059579997045554915,
+        "dominant_match": false,
+        "dominant_ell_a": -6,
+        "dominant_ell_b": 8
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.005958098569558115,
+        "dominant_match": false,
+        "dominant_ell_a": -6,
+        "dominant_ell_b": 8
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.0059579997045554915,
+      "dominant_match": false,
+      "dominant_ell_a": -6,
+      "dominant_ell_b": 8
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/trajectoid_thin_plate_spectra.png"
+  }
+}

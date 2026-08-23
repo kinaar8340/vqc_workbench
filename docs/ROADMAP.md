@@ -24,6 +24,9 @@
 - Primary **Compensate** button when the optic is a mode shifter
 - Meep FDTD gated on `VQC_MEEP_RUN=1`; source-imprint DFT path
 - Trajectoid three-column modal / scalar / Meep figure (`docs/figures/trajectoid_backend_spectra.png`)
+- Source-imprint resolution sweep (16→32): cosine 0.884 → 0.986, always ℓ = −6
+- Spiral plate ℓ = +1 Meep confirmation (purity 0.907, cosine 0.999)
+- Dielectric slab (`thin_plate_3d`) documented as not yet charge-correct at affordable res
 
 ## Phase 2 remaining
 

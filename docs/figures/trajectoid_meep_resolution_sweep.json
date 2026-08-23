@@ -1,0 +1,122 @@
+{
+  "expected_ell": -6,
+  "formula": "\u2113 = winding \u2212 n_trenches = +2 \u2212 8 = -6",
+  "modal": {
+    "backend": "modal",
+    "dominant_ell": -6,
+    "expectation_ell": -5.998080697701305,
+    "purity": 0.9996386860211628,
+    "extras": {
+      "wavelength_nm": 1550.0,
+      "L_max": 8
+    }
+  },
+  "scalar": {
+    "backend": "scalar",
+    "dominant_ell": -6,
+    "expectation_ell": -5.996590260141135,
+    "purity": 0.9993894343496974,
+    "extras": {
+      "z": 0.0,
+      "wavelength_nm": 1550.0,
+      "L_max": 8,
+      "grid_size": 40
+    }
+  },
+  "sweep": [
+    {
+      "resolution": 20,
+      "layout": "source_imprint",
+      "dominant_ell": -6,
+      "expectation_ell": -6.360906542875205,
+      "purity": 0.5168765106604184,
+      "cosine_vs_modal": 0.904860665391444,
+      "dominant_match": true,
+      "extras": {
+        "layout": "source_imprint",
+        "resolution": 20,
+        "cell_size": {
+          "sx": 9.0,
+          "sy": 9.0,
+          "sz": 3.6
+        },
+        "n_pixels": {
+          "nx": 180,
+          "ny": 180,
+          "nz": 72
+        },
+        "grid_size": 40,
+        "extent": 4.5,
+        "pml": 0.5,
+        "z_src": -0.7,
+        "z_mon": 0.7,
+        "kind": "trajectoid",
+        "meep_version": "1.34.0",
+        "until": 20.0
+      }
+    },
+    {
+      "resolution": 24,
+      "layout": "source_imprint",
+      "dominant_ell": -6,
+      "expectation_ell": -6.280564155336386,
+      "purity": 0.6037035166274917,
+      "cosine_vs_modal": 0.9531874847450528,
+      "dominant_match": true,
+      "extras": {
+        "layout": "source_imprint",
+        "resolution": 24,
+        "cell_size": {
+          "sx": 9.0,
+          "sy": 9.0,
+          "sz": 3.5833333333333335
+        },
+        "n_pixels": {
+          "nx": 216,
+          "ny": 216,
+          "nz": 86
+        },
+        "grid_size": 40,
+        "extent": 4.5,
+        "pml": 0.5,
+        "z_src": -0.7,
+        "z_mon": 0.7,
+        "kind": "trajectoid",
+        "meep_version": "1.34.0",
+        "until": 20.0
+      }
+    },
+    {
+      "resolution": 32,
+      "layout": "source_imprint",
+      "dominant_ell": -6,
+      "expectation_ell": -6.134905814929855,
+      "purity": 0.7338719874561739,
+      "cosine_vs_modal": 0.9855834283937589,
+      "dominant_match": true,
+      "extras": {
+        "layout": "source_imprint",
+        "resolution": 32,
+        "cell_size": {
+          "sx": 9.0,
+          "sy": 9.0,
+          "sz": 3.59375
+        },
+        "n_pixels": {
+          "nx": 288,
+          "ny": 288,
+          "nz": 115
+        },
+        "grid_size": 40,
+        "extent": 4.5,
+        "pml": 0.5,
+        "z_src": -0.7,
+        "z_mon": 0.7,
+        "kind": "trajectoid",
+        "meep_version": "1.34.0",
+        "until": 20.0
+      }
+    }
+  ],
+  "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/trajectoid_meep_resolution_sweep.png"
+}

@@ -1,0 +1,92 @@
+{
+  "expected_ell": 1,
+  "backends": [
+    {
+      "backend": "modal",
+      "dominant_ell": 1,
+      "expectation_ell": 0.9999869883746808,
+      "purity": 0.9999934942085031,
+      "extras": {
+        "wavelength_nm": 1550.0,
+        "L_max": 4
+      }
+    },
+    {
+      "backend": "scalar",
+      "dominant_ell": 1,
+      "expectation_ell": 0.9999966234128208,
+      "purity": 0.9999983117078355,
+      "extras": {
+        "z": 0.0,
+        "wavelength_nm": 1550.0,
+        "L_max": 4,
+        "grid_size": 32
+      }
+    },
+    {
+      "backend": "meep",
+      "dominant_ell": 1,
+      "expectation_ell": 1.0369690720252598,
+      "purity": 0.9071699345741087,
+      "extras": {
+        "layout": "source_imprint",
+        "resolution": 12,
+        "cell_size": {
+          "sx": 7.0,
+          "sy": 7.0,
+          "sz": 3.5833333333333335
+        },
+        "n_pixels": {
+          "nx": 84,
+          "ny": 84,
+          "nz": 43
+        },
+        "grid_size": 32,
+        "extent": 3.5,
+        "pml": 0.5,
+        "z_src": -0.7,
+        "z_mon": 0.7,
+        "kind": "spiral_phase",
+        "meep_version": "1.34.0",
+        "until": 20.0
+      }
+    }
+  ],
+  "pairwise": [
+    {
+      "a": "modal",
+      "b": "scalar",
+      "cosine": 0.9999999999970989,
+      "dominant_match": true,
+      "dominant_ell_a": 1,
+      "dominant_ell_b": 1
+    },
+    {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.9989850913480622,
+      "dominant_match": true,
+      "dominant_ell_a": 1,
+      "dominant_ell_b": 1
+    },
+    {
+      "a": "scalar",
+      "b": "meep",
+      "cosine": 0.9989850886493511,
+      "dominant_match": true,
+      "dominant_ell_a": 1,
+      "dominant_ell_b": 1
+    }
+  ],
+  "meep_vs_modal": {
+    "a": "modal",
+    "b": "meep",
+    "cosine": 0.9989850913480622,
+    "dominant_match": true,
+    "dominant_ell_a": 1,
+    "dominant_ell_b": 1
+  },
+  "unavailable": {},
+  "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/spiral_backend_spectra.png",
+  "formula": "\u2113 = ell = +1"
+}
