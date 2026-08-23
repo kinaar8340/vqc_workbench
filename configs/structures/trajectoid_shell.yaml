@@ -1,0 +1,9 @@
+kind: trajectoid
+name: seed_shell
+params:
+  payload_hash: vqc
+  n_trenches: 8
+  winding: 2
+  trench_depth_rad: 3.141592653589793
+material: effective_oam_meta
+notes: Trajectoid-style phase-trench shell (analytic fallback; live flux_trajectoid optional).

@@ -1,0 +1,123 @@
+"""High-level façade: Workbench."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Callable
+
+from vqc_workbench.adapters import EcosystemStatus, probe_ecosystem
+from vqc_workbench.core.config import WorkbenchConfig, load_config
+from vqc_workbench.core.materials import MaterialLibrary
+from vqc_workbench.core.registry import available_kinds, get_structure_class, structure_from_spec
+from vqc_workbench.core.structure import Structure
+from vqc_workbench.export.hologram import export_hologram_stack
+from vqc_workbench.export.slm import export_slm
+from vqc_workbench.simulation.metrics import PipelineResult
+from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
+from vqc_workbench.simulation.pipeline import VQCPipeline
+from vqc_workbench.utils.io import load_yaml
+
+# Ensure structure kinds are registered.
+import vqc_workbench.structures  # noqa: F401
+
+
+class Workbench:
+    """Main entry point for interactive or scripted use."""
+
+    def __init__(self, config_path: str | Path | None = None):
+        self.config: WorkbenchConfig = load_config(config_path)
+        self.materials = MaterialLibrary()
+        self.modal = ModalSimulator(self.config)
+        self.pipeline = VQCPipeline(
+            self.modal,
+            qec_level=self.config.qec_reps,
+            use_bmgl=self.config.use_bmgl,
+            config=self.config,
+        )
+        self.ecosystem: EcosystemStatus = probe_ecosystem()
+
+    def kinds(self) -> list[str]:
+        return available_kinds()
+
+    def create_structure(self, kind: str, name: str | None = None, **params: Any) -> Structure:
+        cls = get_structure_class(kind)
+        material = self.materials.get(params.pop("material", None), default=self.config.default_material)
+        return cls(name=name or kind, params=params, material=material)
+
+    def create_grating(self, kind: str = "spiral_phase", **params: Any) -> Structure:
+        aliases = {
+            "spiral_phase": "spiral_phase",
+            "spiral": "spiral_phase",
+            "binary": "binary_grating",
+            "binary_grating": "binary_grating",
+            "blazed": "blazed_grating",
+            "blazed_grating": "blazed_grating",
+            "forked": "forked_hologram",
+            "forked_hologram": "forked_hologram",
+        }
+        return self.create_structure(aliases.get(kind, kind), **params)
+
+    def create_orbital_braille(self, n_orbs: int = 4, **params: Any) -> Structure:
+        params.setdefault("n_orbs", n_orbs)
+        return self.create_structure("orbital_braille", **params)
+
+    def create_trajectoid(self, payload_hash: str | None = None, **params: Any) -> Structure:
+        if payload_hash is not None:
+            params["payload_hash"] = payload_hash
+        return self.create_structure("trajectoid", **params)
+
+    def create_metasurface(
+        self,
+        phase_func: Callable | Any = None,
+        **params: Any,
+    ) -> Structure:
+        if phase_func is not None:
+            params["phase_func"] = phase_func
+        return self.create_structure("metasurface", **params)
+
+    def create_flux_lattice(self, **params: Any) -> Structure:
+        return self.create_structure("flux_lattice", **params)
+
+    def load_structure(self, path: str | Path) -> Structure:
+        spec = load_yaml(path)
+        return structure_from_spec(spec, materials=self.materials)
+
+    def simulate_modes(self, structure: Structure, **kwargs: Any) -> ModeResult:
+        return self.modal.structure_to_modes(structure, **kwargs)
+
+    def run_vqc(self, structure: Structure, payload: Any, **kwargs: Any) -> PipelineResult:
+        return self.pipeline.run(structure, payload, **kwargs)
+
+    def export_slm(
+        self,
+        structure: Structure,
+        path: str | Path,
+        device: str | None = None,
+        wavelength_nm: float | None = None,
+    ) -> Path:
+        return export_slm(
+            structure,
+            path,
+            device=device or self.config.slm_device,
+            wavelength_nm=wavelength_nm or self.config.wavelength_nm,
+        )
+
+    def export_hologram_stack(
+        self,
+        structure: Structure,
+        out_dir: str | Path,
+        n_frames: int = 8,
+        device: str | None = None,
+    ) -> Path:
+        return export_hologram_stack(
+            structure,
+            out_dir,
+            n_frames=n_frames,
+            device=device or self.config.slm_device,
+            wavelength_nm=self.config.wavelength_nm,
+        )
+
+    def launch_dashboard(self, port: int = 8501) -> None:
+        from vqc_workbench.ui.dashboard import launch_dashboard
+
+        launch_dashboard(port=port)

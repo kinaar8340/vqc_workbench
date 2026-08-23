@@ -1,0 +1,45 @@
+# VQC Photonic Workbench — global defaults
+# Keep UI, CLI, and scripts in sync via this file.
+
+workbench:
+  name: vqc_workbench
+  version: 0.1.0
+  backend: modal          # modal | meep | rcwa
+  seed: 42
+
+photonics:
+  L_max: 8
+  wavelength_nm: 1550.0
+  w0: 1.0
+  grid_size: 128
+  extent: 4.0             # half-width of (x,y) window in w0 units
+  nr: 256
+  z_start: 0.0
+  z_end: 5.0
+  n_z: 40
+  turbulence: 0.0
+  chirp: 0.0
+  qec_suppression: 1      # 1 = raw physics; 16 = VQC patent attenuation
+
+pipeline:
+  qec_reps: 1              # raise to 3 for repetition QEC (needs higher L_max)
+  use_bmgl: true
+  bmgl_gamma: 1.5
+  payload_encoding: oam_bits   # oam_bits | quaternion_spoke
+
+materials:
+  default: fused_silica
+
+export:
+  device: generic_512
+  extent_mm: 4.0
+  bit_depth: 8
+
+lattice:
+  kappa: 0.85
+  ell: 3
+  n_sites: 8
+
+ui:
+  port: 8501
+  title: "VQC Photonic Workbench"

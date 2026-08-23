@@ -1,0 +1,9 @@
+kind: binary_grating
+name: binary_period_0p4
+params:
+  period: 0.4
+  duty: 0.5
+  depth_rad: 3.141592653589793
+  angle_deg: 0.0
+material: fused_silica
+notes: 1D binary phase grating (thin-element).

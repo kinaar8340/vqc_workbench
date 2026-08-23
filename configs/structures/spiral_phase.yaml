@@ -1,0 +1,8 @@
+kind: spiral_phase
+name: spiral_ell3
+params:
+  ell: 3
+  radius_mm: 5.0
+  p: 0
+material: fused_silica
+notes: Spiral phase plate / helical phase mask that seeds LG_{0,3}.

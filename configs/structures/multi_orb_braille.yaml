@@ -1,0 +1,9 @@
+kind: orbital_braille
+name: braille_4orb
+params:
+  n_orbs: 4
+  duties: [0.25, 0.5, 0.75, 0.4]
+  t_frac: 0.35
+  t_max: 1.0
+material: nematic_lc
+notes: Orbital Braille typehead snapshot (PWM-gated orbs on an OAM carrier).

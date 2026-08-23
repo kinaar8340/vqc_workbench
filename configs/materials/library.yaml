@@ -1,0 +1,47 @@
+# Optical constants for thin-element / effective-medium approximations.
+# n is the real refractive index at wavelength_nm; k is extinction.
+# Dispersion, when present, is a Sellmeier-style table of (wavelength_nm, n).
+
+air:
+  n: 1.0
+  k: 0.0
+  notes: Free-space reference.
+
+fused_silica:
+  n: 1.444
+  k: 0.0
+  wavelength_nm: 1550.0
+  notes: Telecom IR fused silica.
+
+silicon:
+  n: 3.48
+  k: 0.0
+  wavelength_nm: 1550.0
+  notes: c-Si at 1550 nm (lossless thin-element proxy).
+
+gold:
+  n: 0.56
+  k: 9.8
+  wavelength_nm: 1550.0
+  notes: Effective Drude-like metal for grating bars (approx).
+
+ito:
+  n: 1.7
+  k: 0.01
+  wavelength_nm: 1550.0
+  notes: Transparent conductor proxy for SLM cover.
+
+nematic_lc:
+  n: 1.55
+  n_e: 1.75
+  n_o: 1.52
+  k: 0.0
+  wavelength_nm: 1550.0
+  anisotropy: uniaxial
+  notes: Liquid-crystal SLM / metasurface modulator.
+
+effective_oam_meta:
+  n: 1.6
+  k: 0.0
+  wavelength_nm: 1550.0
+  notes: Placeholder effective index for nested-helix metasurface cells.

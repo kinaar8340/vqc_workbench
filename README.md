@@ -84,4 +84,4 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 MIT for the workbench integration layer. Optional VQC extras
 (`vqc_proto`, `vqc_sims_public`) remain CC-BY-NC-SA-4.0 with patent
 restrictions (US Prov. 63/913,110). See [IP_NOTICE.md](IP_NOTICE.md).
-# vqc_workbench
+
