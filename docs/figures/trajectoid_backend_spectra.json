@@ -1,0 +1,70 @@
+{
+  "expected_ell": -6,
+  "formula": "\u2113 = winding \u2212 n_trenches = +2 \u2212 8 = -6",
+  "backends": [
+    {
+      "backend": "modal",
+      "dominant_ell": -6,
+      "expectation_ell": -5.998080697701305,
+      "purity": 0.9996386860211628,
+      "extras": {
+        "wavelength_nm": 1550.0,
+        "L_max": 8
+      }
+    },
+    {
+      "backend": "scalar",
+      "dominant_ell": -6,
+      "expectation_ell": -5.996590260141135,
+      "purity": 0.9993894343496974,
+      "extras": {
+        "z": 0.0,
+        "wavelength_nm": 1550.0,
+        "L_max": 8,
+        "grid_size": 40
+      }
+    },
+    {
+      "backend": "meep",
+      "dominant_ell": -6,
+      "expectation_ell": -5.465477273126983,
+      "purity": 0.4372107790875995,
+      "extras": {
+        "resolution": 16,
+        "meep_version": "1.34.0",
+        "kind": "trajectoid",
+        "layout": "source_imprint"
+      }
+    }
+  ],
+  "unavailable": {},
+  "pairwise": [
+    {
+      "a": "modal",
+      "b": "scalar",
+      "cosine": 0.9999999923193441,
+      "l1": 0.00024935714664079886,
+      "dominant_match": true,
+      "dominant_ell_a": -6,
+      "dominant_ell_b": -6
+    },
+    {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.8835797524761417,
+      "l1": 0.8312680838280652,
+      "dominant_match": true,
+      "dominant_ell_a": -6,
+      "dominant_ell_b": -6
+    },
+    {
+      "a": "scalar",
+      "b": "meep",
+      "cosine": 0.883579939327407,
+      "l1": 0.8310203111628319,
+      "dominant_match": true,
+      "dominant_ell_a": -6,
+      "dominant_ell_b": -6
+    }
+  ]
+}

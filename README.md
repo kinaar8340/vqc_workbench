@@ -27,6 +27,8 @@ does not round-trip until you compensate with a matched filter:
 PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
 PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
+# optional FDTD (conda env vqc-meep, pymeep 1.34):
+# VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
 ```
 
 `status` lists neighboring checkouts under `~/Projects`. `simulate` prints the

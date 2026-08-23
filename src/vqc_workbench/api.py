@@ -12,7 +12,7 @@ from vqc_workbench.core.registry import available_kinds, get_structure_class, st
 from vqc_workbench.core.structure import Structure
 from vqc_workbench.export.hologram import export_hologram_stack
 from vqc_workbench.export.slm import export_slm
-from vqc_workbench.simulation.compare import compare_spectra
+from vqc_workbench.simulation.compare import compare_many, compare_spectra
 from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
@@ -119,12 +119,16 @@ class Workbench:
     def compare_backends(
         self,
         structure: Structure,
-        backends: tuple[str, str] = ("modal", "scalar"),
+        backends: tuple[str, ...] = ("modal", "scalar"),
         **kwargs: Any,
     ) -> dict[str, Any]:
-        a = self.simulate_fullwave(structure, backend=backends[0], **kwargs)
-        b = self.simulate_fullwave(structure, backend=backends[1], **kwargs)
-        return compare_spectra(a, b)
+        names = tuple(backends)
+        if len(names) < 2:
+            raise ValueError("compare_backends needs at least two backend names")
+        results = [self.simulate_fullwave(structure, backend=name, **kwargs) for name in names]
+        if len(results) == 2:
+            return compare_spectra(results[0], results[1])
+        return compare_many(results)
 
     def run_vqc(self, structure: Structure, payload: Any, **kwargs: Any) -> PipelineResult:
         return self.pipeline.run(structure, payload, **kwargs)

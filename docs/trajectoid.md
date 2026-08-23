@@ -72,3 +72,31 @@ the phase mask itself stays the same. A **live purity** metric and sparkline
 appear in the sidebar; the spectrum footer reads
 “Live Kolmogorov screen active — purity is no longer expected to be 1.0”.
 VQC runs always use the slider value whether or not the live toggle is on.
+
+## Modal / scalar / Meep
+
+The first full-wave proof is a three-column OAM spectrum on this same cell
+(`n_trenches=8`, `winding=2`, expected ℓ = −6):
+
+![Modal, scalar, and Meep OAM spectra for the canonical trajectoid](figures/trajectoid_backend_spectra.png)
+
+| Backend | Role | Dominant ℓ | Notes |
+|---------|------|------------|--------|
+| **modal** | Thin-element LG (fast path) | −6 | Purity ≈ 1 |
+| **scalar** | Angular-spectrum, `z=0` | −6 | Cosine = 1 with modal |
+| **meep** | 3-D FDTD, source = Gaussian × mask, DFT Ez downstream | −6 | Neighbor leakage to ℓ = −7 at res=16; ⟨ℓ⟩ ≈ −5.5 |
+
+Meep here is a **source-imprint** run: the plate is applied as a complex
+source, then the field is DFT-monitored after vacuum propagation. That is a
+real FDTD field going through the same OAM projector — not the analytic
+mask multiplied back in. A dielectric-slab layout (`layout=thin_plate_3d`)
+exists but needs much higher resolution to hold |ℓ| = 6.
+
+Regenerate:
+
+```bash
+conda activate vqc-meep   # pymeep 1.34 from conda-forge
+VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
+```
+
+JSON sidecar: [`figures/trajectoid_backend_spectra.json`](figures/trajectoid_backend_spectra.json).

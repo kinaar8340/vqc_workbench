@@ -348,10 +348,10 @@ class MeepBackend(FullWaveBackend):
         *,
         L_max: int = 8,
         wavelength_nm: float = 1550.0,
-        grid_size: int = 48,
+        grid_size: int = 32,
         w0: float = 1.0,
         extent: float = 4.0,
-        resolution: int = 16,
+        resolution: int = 12,
         **kwargs: Any,
     ) -> FullWaveResult:
         import meep as mp  # type: ignore
@@ -360,29 +360,53 @@ class MeepBackend(FullWaveBackend):
         if os.environ.get("VQC_MEEP_RUN", "").lower() not in {"1", "true", "yes"}:
             raise FullWaveUnavailable(
                 "Meep is installed. Set VQC_MEEP_RUN=1 to run FDTD "
-                "(spiral / binary grating reference cells)."
+                "(spiral / binary grating / trajectoid reference cells)."
             )
 
         x, y = cartesian_grid(int(grid_size), float(extent))
         mask = structure.to_phase_mask((x, y), float(wavelength_nm))
+        layout = str(kwargs.get("layout") or "source_imprint")
+        if layout != "thin_plate_3d":
+            return self._run_meep_source_imprint(
+                mp,
+                structure,
+                x,
+                y,
+                mask,
+                L_max=int(L_max),
+                w0=float(w0),
+                extent=float(extent),
+                resolution=int(resolution),
+            )
         ny, nx = mask.shape
         sx = sy = 2.0 * float(extent)
-        # Thin phase plate → 2-D ε(x,y). n = 1 + φ/2π maps [−π,π] onto ~[0.5, 1.5].
-        n_map = 1.0 + np.angle(mask) / (2.0 * np.pi)
-        eps = np.clip(n_map, 1.0, 2.5) ** 2
+        # Thin phase plate in 3-D: Δn · d = φ λ / 2π  (λ = 1 Meep unit).
+        d = 0.5
+        lam = 1.0
+        delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
+        n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
+        eps = n_map**2
+        eps_min = float(np.min(eps))
         eps_max = float(np.max(eps))
-        weights = np.clip((eps - 1.0) / max(eps_max - 1.0, 1e-9), 0.0, 1.0)
-        # Meep MaterialGrid wants (Nx, Ny) with x the first axis.
-        weights_mg = np.ascontiguousarray(weights.T)
+        weights = np.clip((eps - eps_min) / max(eps_max - eps_min, 1e-9), 0.0, 1.0)
+        weights_mg = np.ascontiguousarray(weights.T.astype(np.float64))
+        sz = 4.0
+        pml = 0.6
+        z_src = -0.9
+        z_mon = 0.9
+        w0 = float(w0)
+
+        def _amp(p):
+            return float(np.exp(-(p.x**2 + p.y**2) / max(w0**2, 1e-6)))
 
         try:
             geom = [
                 mp.Block(
                     center=mp.Vector3(0, 0, 0),
-                    size=mp.Vector3(sx, sy, mp.inf),
+                    size=mp.Vector3(sx, sy, d),
                     material=mp.MaterialGrid(
-                        grid_size=mp.Vector3(nx, ny),
-                        medium1=mp.Medium(epsilon=1.0),
+                        grid_size=mp.Vector3(nx, ny, 1),
+                        medium1=mp.Medium(epsilon=eps_min),
                         medium2=mp.Medium(epsilon=eps_max),
                         weights=weights_mg,
                     ),
@@ -390,24 +414,25 @@ class MeepBackend(FullWaveBackend):
             ]
             src = [
                 mp.Source(
-                    mp.GaussianSource(wavelength=1.0, width=2.0),
+                    mp.GaussianSource(frequency=1.0 / lam, width=2.0),
                     component=mp.Ez,
-                    center=mp.Vector3(0, 0, 0),
+                    center=mp.Vector3(0, 0, z_src),
                     size=mp.Vector3(sx * 0.9, sy * 0.9, 0),
-                    amp_func=lambda p: float(
-                        np.exp(-(p.x**2 + p.y**2) / max(float(w0) ** 2, 1e-6))
-                    ),
+                    amp_func=_amp,
                 )
             ]
             sim = mp.Simulation(
-                cell_size=mp.Vector3(sx, sy, 0),
+                cell_size=mp.Vector3(sx, sy, sz),
                 geometry=geom,
                 sources=src,
                 resolution=int(resolution),
-                boundary_layers=[mp.PML(0.4)],
+                boundary_layers=[mp.PML(pml)],
+                dimensions=3,
             )
-            sim.run(until=12)
-            ez = np.array(sim.get_array(center=mp.Vector3(), size=mp.Vector3(sx, sy, 0), component=mp.Ez))
+            dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
+            dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
+            sim.run(until=24)
+            ez = np.array(sim.get_dft_array(dft, mp.Ez, 0), dtype=np.complex128)
         except Exception as exc:
             raise FullWaveUnavailable(f"Meep FDTD run failed: {exc}") from exc
 
@@ -415,18 +440,105 @@ class MeepBackend(FullWaveBackend):
         # contract as modal/scalar. No multiplying back the analytic mask.
         if ez.ndim == 1:
             raise FullWaveUnavailable("Meep returned a 1-D Ez array; expected a 2-D plane.")
-        field = _resample_complex(ez.astype(np.complex128), x.shape)
+        field = _resample_complex(np.transpose(np.asarray(ez, dtype=np.complex128)), x.shape)
         return pack_oam_result(
             field,
             x,
             y,
             L_max=int(L_max),
-            w0=float(w0),
+            w0=w0,
             backend="meep",
             extras={
                 "resolution": int(resolution),
                 "meep_version": getattr(mp, "__version__", None),
                 "kind": structure.kind,
+                "layout": "thin_plate_3d",
+                "slab_thickness": d,
+            },
+        )
+
+    def _run_meep_source_imprint(
+        self,
+        mp,
+        structure: Structure,
+        x: NDArray,
+        y: NDArray,
+        mask: NDArray[np.complex128],
+        *,
+        L_max: int,
+        w0: float,
+        extent: float,
+        resolution: int,
+    ) -> FullWaveResult:
+        """Vacuum 3-D FDTD whose source is Gaussian × thin-element mask.
+
+        This is the Meep validation path that conserves OAM: the plate is
+        applied as a complex source, then Ez is DFT-monitored downstream.
+        A resolved dielectric slab is ``layout=thin_plate_3d``.
+        """
+        from scipy.interpolate import RegularGridInterpolator
+
+        sx = sy = 2.0 * float(extent)
+        sz = 3.6
+        pml = 0.5
+        z_src = -0.7
+        z_mon = 0.7
+        lam = 1.0
+        field0 = gaussian_beam(x, y, w0=w0) * mask
+        x_ax = np.asarray(x[0, :], dtype=float)
+        y_ax = np.asarray(y[:, 0], dtype=float)
+        interp = RegularGridInterpolator(
+            (y_ax, x_ax),
+            field0,
+            bounds_error=False,
+            fill_value=0.0,
+        )
+
+        def _amp(p):
+            val = interp((p.y, p.x))
+            return complex(val)
+
+        try:
+            src = [
+                mp.Source(
+                    mp.GaussianSource(frequency=1.0 / lam, width=2.0),
+                    component=mp.Ez,
+                    center=mp.Vector3(0, 0, z_src),
+                    size=mp.Vector3(sx * 0.95, sy * 0.95, 0),
+                    amp_func=_amp,
+                )
+            ]
+            sim = mp.Simulation(
+                cell_size=mp.Vector3(sx, sy, sz),
+                geometry=[],
+                sources=src,
+                resolution=int(resolution),
+                boundary_layers=[mp.PML(pml)],
+                dimensions=3,
+            )
+            dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
+            dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
+            sim.run(until=20)
+            ez = np.array(sim.get_dft_array(dft, mp.Ez, 0), dtype=np.complex128)
+        except Exception as trans_exc:
+            raise FullWaveUnavailable(f"Meep FDTD run failed: {trans_exc}") from trans_exc
+
+        if ez.ndim == 1:
+            raise FullWaveUnavailable("Meep DFT returned a 1-D array; expected a 2-D plane.")
+        # Meep DFT arrays are (x, y); workbench grids are (y, x).
+        field = _resample_complex(np.transpose(ez), x.shape)
+        return pack_oam_result(
+            field,
+            x,
+            y,
+            L_max=int(L_max),
+            w0=w0,
+            backend="meep",
+            extras={
+                "resolution": int(resolution),
+                "meep_version": getattr(mp, "__version__", None),
+                "kind": structure.kind,
+                "layout": "source_imprint",
             },
         )
 

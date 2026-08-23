@@ -76,9 +76,12 @@ solver produced the numbers. Results are cached by a SHA-256 of
 Compare with `Workbench.compare_backends(structure, ("modal", "scalar"))`.
 
 Meep is opt-in: `simulate_fullwave(..., backend="meep")` raises until
-`VQC_MEEP_RUN=1` and MIT Meep is importable. The FDTD path builds a 2-D
-ε(x,y) from the thin-element phase, samples Ez, and packs a `FullWaveResult`
-through the same LG projector. Tests skip that path unless the env var is set.
+`VQC_MEEP_RUN=1` and MIT Meep is importable. Default layout is
+**source-imprint**: complex amp = Gaussian × mask, 3-D vacuum FDTD, DFT Ez
+on a downstream plane, then the same LG projector. `layout=thin_plate_3d`
+is a dielectric slab (higher resolution required for |ℓ| ≳ 3). Tests skip
+FDTD unless the env var is set. Canonical figure:
+`docs/figures/trajectoid_backend_spectra.png`.
 
 ## Expected topological charge
 

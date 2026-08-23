@@ -22,7 +22,8 @@
 - Expected-ℓ readout (`winding − n_trenches` for trajectoids, etc.)
 - Live Kolmogorov turbulence on the displayed OAM spectrum
 - Primary **Compensate** button when the optic is a mode shifter
-- Meep FDTD gated on `VQC_MEEP_RUN=1`; 2-D ε(x,y) MaterialGrid path
+- Meep FDTD gated on `VQC_MEEP_RUN=1`; source-imprint DFT path
+- Trajectoid three-column modal / scalar / Meep figure (`docs/figures/trajectoid_backend_spectra.png`)
 
 ## Phase 2 remaining
 

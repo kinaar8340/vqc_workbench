@@ -74,8 +74,20 @@ def test_meep_spiral_agrees_with_modal():
     wb = Workbench()
     g = wb.create_grating(kind="spiral_phase", ell=1)
     cmp = wb.compare_backends(
-        g, backends=("modal", "meep"), L_max=4, grid_size=32, resolution=10
+        g, backends=("modal", "meep"), L_max=4, grid_size=24, extent=3.0, resolution=10
     )
     assert cmp["backend_b"] == "meep"
-    # FDTD is coarse at this resolution; require the same-sign dominant peak.
-    assert cmp["dominant_ell_a"] * cmp["dominant_ell_b"] >= 0
+    assert cmp["dominant_ell_b"] == 1
+
+
+def test_compare_many_modal_scalar():
+    from vqc_workbench.simulation.compare import compare_many
+
+    wb = Workbench()
+    g = wb.create_grating(kind="spiral_phase", ell=2)
+    r1 = wb.simulate_fullwave(g, backend="modal", L_max=6, grid_size=48)
+    r2 = wb.simulate_fullwave(g, backend="scalar", L_max=6, grid_size=48, z=0.0)
+    many = compare_many([r1, r2])
+    assert many["dominant_ell"]["modal"] == 2
+    assert many["dominant_ell"]["scalar"] == 2
+    assert many["pairwise"][0]["cosine"] > 0.98

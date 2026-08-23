@@ -56,3 +56,32 @@ def compare_spectra(a: FullWaveResult, b: FullWaveResult) -> dict[str, Any]:
         "intensity_a": va,
         "intensity_b": vb,
     }
+
+
+def compare_many(results: list[FullWaveResult]) -> dict[str, Any]:
+    """Pairwise compare 2+ FullWaveResult objects (modal / scalar / meep, …)."""
+    if len(results) < 2:
+        raise ValueError("compare_many needs at least two results")
+    names = [r.backend for r in results]
+    pairwise: list[dict[str, Any]] = []
+    for i in range(len(results)):
+        for j in range(i + 1, len(results)):
+            c = compare_spectra(results[i], results[j])
+            pairwise.append(
+                {
+                    "a": names[i],
+                    "b": names[j],
+                    "cosine": c["cosine"],
+                    "l1": c["l1"],
+                    "dominant_match": c["dominant_match"],
+                    "dominant_ell_a": c["dominant_ell_a"],
+                    "dominant_ell_b": c["dominant_ell_b"],
+                }
+            )
+    return {
+        "backends": names,
+        "dominant_ell": {n: int(r.dominant_ell()) for n, r in zip(names, results)},
+        "purity": {n: float(np.sum(r.intensity**2)) for n, r in zip(names, results)},
+        "pairwise": pairwise,
+        "results": results,
+    }

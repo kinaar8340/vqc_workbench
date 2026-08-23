@@ -44,8 +44,11 @@ def main(argv: list[str] | None = None) -> int:
     p_cmp = sub.add_parser("compare", help="modal vs full-wave OAM spectra")
     p_cmp.add_argument("--kind", default="binary_grating")
     p_cmp.add_argument("--ell", type=int, default=3)
+    p_cmp.add_argument("--n-trenches", type=int, default=8)
+    p_cmp.add_argument("--winding", type=int, default=2)
     p_cmp.add_argument("--backends", default="modal,scalar")
     p_cmp.add_argument("--L-max", dest="L_max", type=int, default=8)
+    p_cmp.add_argument("--figure", type=Path, default=None, help="optional PNG path")
 
     sub.add_parser("status", help="ecosystem probe")
 
@@ -107,13 +110,37 @@ def main(argv: list[str] | None = None) -> int:
         kwargs = {}
         if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
             kwargs["ell"] = args.ell
+        if args.kind == "trajectoid":
+            kwargs["n_trenches"] = args.n_trenches
+            kwargs["winding"] = args.winding
         structure = wb.create_structure(args.kind, **kwargs)
-        pair = tuple(p.strip() for p in args.backends.split(","))
-        if len(pair) != 2:
-            raise SystemExit("--backends must be two names, e.g. modal,scalar")
-        cmp = wb.compare_backends(structure, backends=pair, L_max=args.L_max)
-        printable = {k: v for k, v in cmp.items() if k not in {"ell", "intensity_a", "intensity_b"}}
+        names = tuple(p.strip() for p in args.backends.split(",") if p.strip())
+        if len(names) < 2:
+            raise SystemExit("--backends needs at least two names, e.g. modal,scalar or modal,scalar,meep")
+        cmp = wb.compare_backends(structure, backends=names, L_max=args.L_max)
+        if "pairwise" in cmp:
+            printable = {k: v for k, v in cmp.items() if k != "results"}
+        else:
+            printable = {k: v for k, v in cmp.items() if k not in {"ell", "intensity_a", "intensity_b"}}
         print(json.dumps(printable, indent=2, default=str))
+        if args.figure:
+            from vqc_workbench.ui.visualizers import plot_backend_spectra
+
+            if "results" in cmp:
+                series = cmp["results"]
+            else:
+                series = [
+                    wb.simulate_fullwave(structure, backend=names[0], L_max=args.L_max),
+                    wb.simulate_fullwave(structure, backend=names[1], L_max=args.L_max),
+                ]
+            fc = wb.forecast_charge(structure)
+            plot_backend_spectra(
+                series,
+                expected_ell=fc.expected_ell,
+                path=str(args.figure),
+                title=f"{structure.kind}  expected ℓ = {fc.expected_ell}",
+            )
+            print(f"wrote {args.figure}")
         return 0
 
     if args.cmd == "export-slm":
