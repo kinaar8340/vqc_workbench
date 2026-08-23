@@ -56,6 +56,11 @@ class VQCPipeline:
         turbulence = float(sim_kwargs.pop("turbulence", self.config.turbulence))
         if self.use_bmgl:
             turbulence = bmgl_inhibit(turbulence, gamma=self.config.bmgl_gamma)
+        compensate = bool(sim_kwargs.pop("compensate", False))
+        if compensate:
+            from vqc_workbench.structures.cascade import compensate_structure
+
+            structure = compensate_structure(structure)
 
         weights, quat, _n_coded = encode_payload(data, L_max=L_max, qec_reps=qec_reps)
         x, y = self.modal._grid(grid_size)
@@ -108,6 +113,7 @@ class VQCPipeline:
                 "turbulence": turbulence,
                 "dominant_ell": modes.dominant_ell(),
                 "n_bytes": len(data),
+                "compensated": compensate,
             },
             timing_s=time.perf_counter() - t0,
         )

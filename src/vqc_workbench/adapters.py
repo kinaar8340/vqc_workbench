@@ -86,10 +86,13 @@ def probe_ecosystem() -> EcosystemStatus:
         hfb=_module_available("hfb") or _checkout(home, "hfb", "hfb", "__init__.py"),
         qga=_path_exists(str(home / "qga" / "lib" / "hopf_lattice.py")),
         meep=_module_available("meep"),
-        grcwa=_module_available("grcwa"),
+        grcwa=_module_available("grcwa") or _module_available("nannos"),
     )
     if not status.flux_hopf_lib:
         status.notes["flux_hopf_lib"] = "optional; local quaternion fallback in use"
     if not status.meep:
-        status.notes["meep"] = "optional full-wave backend not installed"
+        status.notes["meep"] = "optional FDTD backend not installed; use backend='scalar'"
+    if not status.grcwa:
+        status.notes["grcwa"] = "optional RCWA backend not installed; use backend='scalar'"
+    status.notes["scalar"] = "angular-spectrum full-wave lite is always available"
     return status

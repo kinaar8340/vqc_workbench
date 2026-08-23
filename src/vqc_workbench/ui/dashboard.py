@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+DASHBOARD_KINDS_HIDDEN = {"cascade", "matched_filter", "custom"}
+
 
 def dashboard_script() -> Path:
     return Path(__file__).resolve()
@@ -46,12 +48,15 @@ def _app() -> None:
     st.caption("Edit metamaterials and gratings → OAM modes → Vortex Quaternion Conduit")
 
     wb = Workbench()
-    kinds = available_kinds()
+    kinds = [k for k in available_kinds() if k not in DASHBOARD_KINDS_HIDDEN]
     eco = probe_ecosystem()
+    eco_dict = eco.as_dict()
+    notes = eco_dict.pop("notes", {}) if isinstance(eco_dict, dict) else {}
 
     with st.sidebar:
         st.header("Structure")
-        kind = st.selectbox("kind", kinds, index=kinds.index("spiral_phase") if "spiral_phase" in kinds else 0)
+        default_idx = kinds.index("spiral_phase") if "spiral_phase" in kinds else 0
+        kind = st.selectbox("kind", kinds, index=default_idx)
         params: dict = {}
         for field in schema_for(kind):
             if field["type"] == "int":
@@ -64,37 +69,77 @@ def _app() -> None:
                 )
         L_max = st.slider("L_max", 2, 16, int(wb.config.L_max))
         turb = st.slider("turbulence", 0.0, 2.0, 0.0, 0.05)
-        payload = st.text_input("VQC payload", "I live in Oregon")
-        st.subheader("Ecosystem")
-        st.json({k: v for k, v in eco.as_dict().items() if k != "notes"})
+        payload = st.text_input("VQC payload", "Hi")
+        st.divider()
+        st.subheader("Neighboring packages")
+        discovered = [k for k, v in eco_dict.items() if v]
+        missing = [k for k, v in eco_dict.items() if not v]
+        st.metric("discovered", len(discovered))
+        st.success(", ".join(discovered) if discovered else "none")
+        if missing:
+            st.caption("not installed: " + ", ".join(missing))
+        if notes:
+            with st.expander("notes"):
+                st.json(notes)
 
     structure = wb.create_structure(kind, **params)
+    modes = wb.simulate_modes(structure, L_max=L_max)
+
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Phase mask")
-        modes = wb.simulate_modes(structure, L_max=L_max)
         st.image(
             _phase_to_rgb(modes.phase_mask),
             caption=f"{structure.kind} / {structure.name}",
-            use_container_width=True,
+            width="stretch",
         )
     with col2:
         st.subheader("OAM spectrum")
         st.bar_chart({"ell": modes.ell, "I": modes.intensity}, x="ell", y="I")
-        st.metric("dominant ℓ", modes.dominant_ell())
-        st.metric("OAM purity", float(np.sum(modes.intensity**2)))
+        m1, m2, m3 = st.columns(3)
+        m1.metric("dominant ℓ", modes.dominant_ell())
+        m2.metric("⟨ℓ⟩", f"{modes.expectation_ell():.2f}")
+        m3.metric("OAM purity", f"{float(np.sum(modes.intensity**2)):.3f}")
 
-    if st.button("Run VQC pipeline"):
-        # Identity coupling is used when the structure is a strong mode shifter
-        # so payload recovery remains interpretable; the mask still seeds modes above.
-        ident = wb.create_structure("identity")
-        conduit = ident if kind != "identity" else structure
-        result = wb.run_vqc(conduit, payload, L_max=L_max, turbulence=turb)
-        st.success(
-            f"fidelity={result.fidelity:.4f}  BER={result.ber:.4f}  "
-            f"match={result.payload_match}  recovered={result.recovered_payload!r}"
+    st.subheader("Run VQC")
+    st.caption(
+        "Identity is the recovery channel. The structure itself is a physical "
+        "optic — a spiral plate shifts modes. Compensate applies a matched filter."
+    )
+    b1, b2, b3 = st.columns(3)
+    run_ident = b1.button("Identity channel", width="stretch")
+    run_struct = b2.button(f"Through {kind}", width="stretch")
+    run_matched = b3.button("Through structure + matched filter", width="stretch")
+
+    ident = wb.create_structure("identity")
+    results = []
+    if run_ident:
+        results.append(("identity", wb.run_vqc(ident, payload, L_max=L_max, turbulence=turb)))
+    if run_struct:
+        results.append((kind, wb.run_vqc(structure, payload, L_max=L_max, turbulence=turb)))
+    if run_matched:
+        results.append(
+            (
+                f"{kind} + matched",
+                wb.run_vqc(structure, payload, L_max=L_max, turbulence=turb, compensate=True),
+            )
         )
-        st.json(result.summarize())
+
+    if results:
+        cols = st.columns(len(results))
+        for col, (label, result) in zip(cols, results):
+            with col:
+                st.markdown(f"**{label}**")
+                st.metric("fidelity", f"{result.fidelity:.4f}")
+                st.metric("BER", f"{result.ber:.4f}")
+                st.metric("match", str(result.payload_match))
+                recovered = result.recovered_payload
+                try:
+                    text = recovered.decode("utf-8")
+                except UnicodeDecodeError:
+                    text = recovered.hex()
+                st.code(text)
+                st.json(result.summarize())
 
 
 def _phase_to_rgb(mask) -> "np.ndarray":

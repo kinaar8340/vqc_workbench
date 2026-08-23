@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vqc-workbench"
-version = "0.1.0"
+version = "0.2.0"
 description = "VQC-native photonic workbench: edit metamaterials and gratings, simulate OAM modes, run the Vortex Quaternion Conduit pipeline"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -12,7 +12,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
 │  Workbench façade (api.py)                                   │
-│  create_* · simulate_modes · run_vqc · export_slm            │
+│  create_* · simulate_modes · simulate_fullwave · run_vqc     │
 └──────────────┬─────────────────────────────┬────────────────┘
                │                             │
      ┌─────────▼─────────┐         ┌─────────▼─────────┐
@@ -56,15 +56,24 @@ LG / helical engine that matches `oam_flux.vqc_photonics`.
    Gaussian beam?”
 2. **Helical codec projector** (`project_helical_spectrum`) — packs payload
    bits onto `exp(iℓφ)` carriers so `run_vqc` round-trips on an identity
-   channel. A spiral plate *should* scramble that payload (mode shifter).
+   channel. A spiral plate *should* scramble that payload (mode shifter)
+   unless `compensate=True` applies a matched filter.
 
 ## Backends
 
+Every full-wave backend returns a `FullWaveResult` (`ell`, `coefficients`,
+`intensity`, optional `S` / `T`) so the VQC pipeline does not care which
+solver produced the numbers. Results are cached by a SHA-256 of
+`(kind, params, backend, L_max, λ, grid)`.
+
 - **modal** (default): thin-element phase mask + LG / helical projection +
   vectorized z-propagation with optional Kolmogorov mixing.
-- **meep / rcwa**: opt-in skeletons in `simulation/fullwave.py`. They raise
-  `FullWaveUnavailable` until the solver is installed. Results are meant to
-  feed the same `coefficients` dict the modal path already consumes.
+- **scalar**: angular-spectrum scalar diffraction (always available). At
+  `z=0` it matches modal; a small `z` adds Fresnel diffraction.
+- **meep / rcwa**: opt-in. Raise `FullWaveUnavailable` until the solver is
+  importable. When present they still emit `FullWaveResult`.
+
+Compare with `Workbench.compare_backends(structure, ("modal", "scalar"))`.
 
 ## Config
 

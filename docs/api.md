@@ -26,7 +26,7 @@ g.to_yaml("out.yaml")
 
 Kinds: `spiral_phase`, `binary_grating`, `blazed_grating`, `forked_hologram`,
 `metasurface`, `orbital_braille`, `trajectoid`, `flux_lattice`, `custom`,
-`identity`.
+`identity`, `matched_filter`, `cascade`.
 
 Every structure implements:
 
@@ -47,8 +47,17 @@ print(result.fidelity, result.ber, result.recovered_payload)
 ```
 
 `run_vqc` auto-raises `L_max` so the payload fits (2 bits per non-zero ℓ).
-A spiral / forked hologram is a mode shifter — use `identity` (or a designed
-matched filter) when you want payload recovery.
+A spiral / forked hologram is a mode shifter — use `identity`, or compensate:
+
+```python
+# inverse thin-element of a known optic
+filt = wb.matched_filter(g)
+channel = wb.compensate(g)          # g then filt  ≈ identity
+result = wb.run_vqc(g, b"Hi", compensate=True)
+
+modal_vs_scalar = wb.compare_backends(g, ("modal", "scalar"), z=0.0)
+fw = wb.simulate_fullwave(g, backend="scalar")
+```
 
 ## Export
 
@@ -65,6 +74,8 @@ Presets: `generic_512`, `holoeye_pluto_2`, `meadowlark_512`, `thorlabs_1080p`.
 vqc-workbench status
 vqc-workbench simulate --kind spiral_phase --ell 3
 vqc-workbench run-vqc --kind identity --payload Hi
+vqc-workbench run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
+vqc-workbench compare --kind binary_grating --backends modal,scalar
 vqc-workbench export-slm --kind orbital_braille --out outputs/slm
 vqc-workbench dashboard --port 8501
 ```

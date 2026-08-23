@@ -53,6 +53,10 @@ class ModeResult:
     def dominant_ell(self) -> int:
         return int(self.ell[int(np.argmax(np.abs(self.coefficients)))])
 
+    def expectation_ell(self) -> float:
+        """Intensity-weighted ⟨ℓ⟩."""
+        return float(np.sum(self.ell.astype(float) * self.intensity))
+
     def weight_dict(self) -> dict[int, complex]:
         return {int(e): complex(c) for e, c in zip(self.ell, self.coefficients)}
 

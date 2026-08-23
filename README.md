@@ -6,8 +6,31 @@ defects, then push the resulting OAM content through a Vortex Quaternion
 Conduit pipeline.
 
 This is a research prototype, not a drop-in replacement for Lumerical /
-Synopsys OptoCompiler. The fast path is a thin-element modal engine. Optional
-Meep / RCWA backends are hooks for later validation.
+Synopsys OptoCompiler. The fast path is a thin-element modal engine. A
+scalar-diffraction full-wave lite is always on; Meep / RCWA backends fail
+loudly until those solvers are installed.
+
+## First 10 minutes
+
+From the repo root (with the package on `PYTHONPATH` or `pip install -e .`):
+
+```bash
+PYTHONPATH=src python3 -m vqc_workbench.cli status
+PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind spiral_phase --ell 3
+PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind identity --payload Hi
+```
+
+A spiral plate is a **mode shifter**, so the same payload through the grating
+does not round-trip until you compensate with a matched filter:
+
+```bash
+PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
+PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
+PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
+```
+
+`status` lists neighboring checkouts under `~/Projects`. `simulate` prints the
+OAM spectrum. `run-vqc` on `identity` should recover `Hi` at fidelity 1.0.
 
 ## Install
 
@@ -63,8 +86,9 @@ vqc-workbench dashboard
   repetition QEC → decode).
 - SLM export (Holoeye / Meadowlark / Thorlabs presets).
 - Streamlit editor.
-- Full-wave skeletons (`MeepBackend`, `RCWABackend`) that fail loudly until
-  the solver is installed.
+- Full-wave interface (`FullWaveResult` + structure-hash cache): `scalar`
+  angular-spectrum always available; `meep` / `rcwa` fail loudly if missing.
+- Matched-filter / cascade helper so a known mode shifter can recover payload.
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 [docs/adding_a_structure.md](docs/adding_a_structure.md), and
@@ -76,7 +100,7 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 |-------|--------|
 | 0 Inventory + scaffolding + Structure → modes API | **this tree** |
 | 1 Analytical gratings / metasurfaces + dashboard | **this tree** |
-| 2 Meep / RCWA wrappers with cached S-matrices | skeleton only |
+| 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep/RCWA still opt-in) |
 | 3 Inverse design, live oam_flux lattice, hardware-in-the-loop | later |
 
 ## License

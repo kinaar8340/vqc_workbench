@@ -40,4 +40,12 @@ wb.simulate_modes(cell)
 ```
 
 Keep new cells **thin-element first**. Full-wave geometry belongs in
-`to_geometry_dict()`, consumed later by `simulation/fullwave.py`.
+`to_geometry_dict()`, consumed by `simulation/fullwave.py`.
+
+Matched filters and cascades are factories, not YAML kinds you type by hand:
+
+```python
+wb.matched_filter(cell)
+wb.compensate(cell)          # cell × inverse(cell)
+wb.cascade(cell_a, cell_b)
+```

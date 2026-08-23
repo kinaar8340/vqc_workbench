@@ -12,9 +12,12 @@ from vqc_workbench.core.registry import available_kinds, get_structure_class, st
 from vqc_workbench.core.structure import Structure
 from vqc_workbench.export.hologram import export_hologram_stack
 from vqc_workbench.export.slm import export_slm
+from vqc_workbench.simulation.compare import compare_spectra
+from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
 from vqc_workbench.simulation.pipeline import VQCPipeline
+from vqc_workbench.structures.cascade import Cascade, MatchedFilter, compensate_structure
 from vqc_workbench.utils.io import load_yaml
 
 # Ensure structure kinds are registered.
@@ -35,6 +38,7 @@ class Workbench:
             config=self.config,
         )
         self.ecosystem: EcosystemStatus = probe_ecosystem()
+        self.fullwave = FullWaveEngine(modal=self.modal)
 
     def kinds(self) -> list[str]:
         return available_kinds()
@@ -82,8 +86,41 @@ class Workbench:
         spec = load_yaml(path)
         return structure_from_spec(spec, materials=self.materials)
 
+    def matched_filter(self, structure: Structure) -> MatchedFilter:
+        return MatchedFilter(target=structure)
+
+    def cascade(self, *stages: Structure, name: str = "cascade") -> Cascade:
+        return Cascade(name=name, stages=list(stages))
+
+    def compensate(self, structure: Structure) -> Cascade:
+        """Structure followed by its inverse thin-element (≈ identity)."""
+        return compensate_structure(structure)
+
     def simulate_modes(self, structure: Structure, **kwargs: Any) -> ModeResult:
         return self.modal.structure_to_modes(structure, **kwargs)
+
+    def simulate_fullwave(
+        self,
+        structure: Structure,
+        backend: str = "scalar",
+        **kwargs: Any,
+    ) -> FullWaveResult:
+        kwargs.setdefault("L_max", self.config.L_max)
+        kwargs.setdefault("wavelength_nm", self.config.wavelength_nm)
+        kwargs.setdefault("grid_size", self.config.grid_size)
+        kwargs.setdefault("w0", self.config.w0)
+        kwargs.setdefault("extent", self.config.extent)
+        return self.fullwave.run(structure, backend=backend, **kwargs)
+
+    def compare_backends(
+        self,
+        structure: Structure,
+        backends: tuple[str, str] = ("modal", "scalar"),
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        a = self.simulate_fullwave(structure, backend=backends[0], **kwargs)
+        b = self.simulate_fullwave(structure, backend=backends[1], **kwargs)
+        return compare_spectra(a, b)
 
     def run_vqc(self, structure: Structure, payload: Any, **kwargs: Any) -> PipelineResult:
         return self.pipeline.run(structure, payload, **kwargs)

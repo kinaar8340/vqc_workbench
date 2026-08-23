@@ -11,12 +11,20 @@
 - Ecosystem probe over `~/Projects`
 - Tests (structure, modal, pipeline, export, config)
 
-## Phase 2 — full-wave (skeleton present)
+## Done (Phase 2 interface)
 
-- Real Meep 2-D/3-D runs for gratings and meta-atoms
-- RCWA (grcwa / nannos) for periodic metasurfaces
-- Cache S-matrix / modal coefficients so the fast VQC path stays usable
-- Hand far-field OAM content from FDTD into `run_vqc`
+- `FullWaveResult` (`ell`, coefficients, intensity, S/T) shared by all backends
+- Structure-hash cache (memory, optional disk)
+- `scalar` angular-spectrum backend (always on) vs modal side-by-side
+- Meep / RCWA still fail loudly when the solver is not installed
+- Matched-filter / cascade compensation for mode shifters
+- Dashboard: identity vs structure vs compensated, ecosystem status panel
+
+## Phase 2 remaining
+
+- Real Meep 2-D/3-D runs for gratings and meta-atoms (`VQC_MEEP_RUN=1`)
+- RCWA layer-stack mapping (grcwa / nannos) instead of the scalar stand-in
+- Disk cache under `outputs/fullwave_cache/` wired through config
 
 ## Phase 3 — unified workbench
 

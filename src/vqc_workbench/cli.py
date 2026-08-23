@@ -22,6 +22,12 @@ def main(argv: list[str] | None = None) -> int:
     p_vqc.add_argument("--payload", default="I live in Oregon")
     p_vqc.add_argument("--turbulence", type=float, default=0.0)
     p_vqc.add_argument("--L-max", dest="L_max", type=int, default=None)
+    p_vqc.add_argument(
+        "--compensate",
+        action="store_true",
+        help="apply a matched filter after the structure (inverse shifter)",
+    )
+    p_vqc.add_argument("--ell", type=int, default=3)
 
     p_slm = sub.add_parser("export-slm", help="write SLM phase + levels")
     p_slm.add_argument("--kind", default="spiral_phase")
@@ -31,6 +37,12 @@ def main(argv: list[str] | None = None) -> int:
 
     p_ui = sub.add_parser("dashboard", help="launch Streamlit UI")
     p_ui.add_argument("--port", type=int, default=8501)
+
+    p_cmp = sub.add_parser("compare", help="modal vs full-wave OAM spectra")
+    p_cmp.add_argument("--kind", default="binary_grating")
+    p_cmp.add_argument("--ell", type=int, default=3)
+    p_cmp.add_argument("--backends", default="modal,scalar")
+    p_cmp.add_argument("--L-max", dest="L_max", type=int, default=8)
 
     sub.add_parser("status", help="ecosystem probe")
 
@@ -64,15 +76,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "run-vqc":
-        structure = wb.create_structure(args.kind)
+        kwargs = {}
+        if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
+            kwargs["ell"] = args.ell
+        structure = wb.create_structure(args.kind, **kwargs)
         result = wb.run_vqc(
             structure,
             args.payload,
             L_max=args.L_max,
             turbulence=args.turbulence,
+            compensate=args.compensate,
         )
         print(json.dumps(result.summarize(), indent=2, default=str))
         return 0 if result.payload_match else 1
+
+    if args.cmd == "compare":
+        kwargs = {}
+        if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
+            kwargs["ell"] = args.ell
+        structure = wb.create_structure(args.kind, **kwargs)
+        pair = tuple(p.strip() for p in args.backends.split(","))
+        if len(pair) != 2:
+            raise SystemExit("--backends must be two names, e.g. modal,scalar")
+        cmp = wb.compare_backends(structure, backends=pair, L_max=args.L_max)
+        printable = {k: v for k, v in cmp.items() if k not in {"ell", "intensity_a", "intensity_b"}}
+        print(json.dumps(printable, indent=2, default=str))
+        return 0
 
     if args.cmd == "export-slm":
         kwargs = {}
