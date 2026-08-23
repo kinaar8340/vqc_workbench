@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from vqc_workbench.api import Workbench
@@ -52,3 +54,28 @@ def test_fullwave_cache_hits():
     assert a.cached is False
     assert b.cached is True
     assert a.dominant_ell() == b.dominant_ell()
+
+
+def test_meep_opt_in_gate(monkeypatch):
+    pytest.importorskip("meep")
+    monkeypatch.delenv("VQC_MEEP_RUN", raising=False)
+    wb = Workbench()
+    g = wb.create_grating(kind="spiral_phase", ell=1)
+    with pytest.raises(FullWaveUnavailable, match="VQC_MEEP_RUN"):
+        wb.simulate_fullwave(g, backend="meep", L_max=4, grid_size=32)
+
+
+@pytest.mark.skipif(
+    os.environ.get("VQC_MEEP_RUN", "").lower() not in {"1", "true", "yes"},
+    reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check",
+)
+def test_meep_spiral_agrees_with_modal():
+    pytest.importorskip("meep")
+    wb = Workbench()
+    g = wb.create_grating(kind="spiral_phase", ell=1)
+    cmp = wb.compare_backends(
+        g, backends=("modal", "meep"), L_max=4, grid_size=32, resolution=10
+    )
+    assert cmp["backend_b"] == "meep"
+    # FDTD is coarse at this resolution; require the same-sign dominant peak.
+    assert cmp["dominant_ell_a"] * cmp["dominant_ell_b"] >= 0

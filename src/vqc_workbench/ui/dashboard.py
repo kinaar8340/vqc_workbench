@@ -35,7 +35,6 @@ def launch_dashboard(port: int = 8501) -> None:
 
 
 def _app() -> None:
-    import numpy as np
     import streamlit as st
 
     from vqc_workbench.adapters import probe_ecosystem
@@ -68,7 +67,8 @@ def _app() -> None:
                     field["name"], float(field["min"]), float(field["max"]), float(field["default"])
                 )
         L_max = st.slider("L_max", 2, 16, int(wb.config.L_max))
-        turb = st.slider("turbulence", 0.0, 2.0, 0.0, 0.05)
+        live_turb = st.toggle("Live turbulence on spectrum", value=False)
+        turb = st.slider("turbulence", 0.0, 2.0, 0.0, 0.05, help="Used by VQC runs always; also by the spectrum when live turbulence is on.")
         payload = st.text_input("VQC payload", "Hi")
         st.divider()
         st.subheader("Neighboring packages")
@@ -83,7 +83,21 @@ def _app() -> None:
                 st.json(notes)
 
     structure = wb.create_structure(kind, **params)
-    modes = wb.simulate_modes(structure, L_max=L_max)
+    forecast = wb.forecast_charge(structure)
+    spec_turb = turb if live_turb else 0.0
+    modes = wb.simulate_modes(structure, L_max=L_max, turbulence=spec_turb)
+    purity = float((modes.intensity**2).sum())
+
+    with st.sidebar:
+        if live_turb:
+            st.metric("live purity", f"{purity:.3f}", delta=f"{purity - 1.0:.3f}")
+            trace = st.session_state.setdefault("purity_trace", [])
+            trace.append(purity)
+            st.session_state.purity_trace = trace[-48:]
+            st.line_chart(st.session_state.purity_trace, height=90)
+            st.caption("Purity sparkline (last ~48 reruns). Drag turbulence to watch it fall.")
+        else:
+            st.session_state.purity_trace = []
 
     col1, col2 = st.columns(2)
     with col1:
@@ -96,20 +110,47 @@ def _app() -> None:
     with col2:
         st.subheader("OAM spectrum")
         st.bar_chart({"ell": modes.ell, "I": modes.intensity}, x="ell", y="I")
-        m1, m2, m3 = st.columns(3)
+        expected_label = "—" if forecast.expected_ell is None else str(forecast.expected_ell)
+        m0, m1, m2, m3 = st.columns(4)
+        m0.metric("expected ℓ", expected_label)
         m1.metric("dominant ℓ", modes.dominant_ell())
         m2.metric("⟨ℓ⟩", f"{modes.expectation_ell():.2f}")
-        m3.metric("OAM purity", f"{float(np.sum(modes.intensity**2)):.3f}")
+        m3.metric("OAM purity", f"{purity:.3f}")
+        st.caption(forecast.formula)
+        if forecast.notes:
+            st.caption(forecast.notes)
+        if (
+            forecast.expected_ell is not None
+            and spec_turb == 0.0
+            and modes.dominant_ell() == forecast.expected_ell
+        ):
+            st.success("Measured peak matches the topological arithmetic.")
+        if live_turb and turb > 0:
+            st.caption("Live Kolmogorov screen active — purity is no longer expected to be 1.0")
 
     st.subheader("Run VQC")
-    st.caption(
-        "Identity is the recovery channel. The structure itself is a physical "
-        "optic — a spiral plate shifts modes. Compensate applies a matched filter."
-    )
-    b1, b2, b3 = st.columns(3)
+    if forecast.mode_shifter:
+        st.info(
+            f"This optic is a **mode shifter** (expected ℓ = {expected_label}). "
+            "Payload recovery belongs on the identity channel or after the matched filter."
+        )
+    else:
+        st.caption(
+            "Identity is the recovery channel. Compensate applies a matched filter "
+            "when the optic adds topological charge."
+        )
+
+    if forecast.mode_shifter:
+        b1, b2, b3 = st.columns([1.0, 1.0, 1.35])
+    else:
+        b1, b2, b3 = st.columns(3)
     run_ident = b1.button("Identity channel", width="stretch")
     run_struct = b2.button(f"Through {kind}", width="stretch")
-    run_matched = b3.button("Through structure + matched filter", width="stretch")
+    run_matched = b3.button(
+        "Compensate (matched filter)",
+        width="stretch",
+        type="primary" if forecast.mode_shifter else "secondary",
+    )
 
     ident = wb.create_structure("identity")
     results = []

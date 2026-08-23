@@ -16,6 +16,7 @@ outputs/
 *.npy
 *.npz
 *.png
+!docs/figures/*.png
 *.raw
 *.csv
 .ipynb_checkpoints/

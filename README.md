@@ -30,7 +30,12 @@ PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e 
 ```
 
 `status` lists neighboring checkouts under `~/Projects`. `simulate` prints the
-OAM spectrum. `run-vqc` on `identity` should recover `Hi` at fidelity 1.0.
+OAM spectrum (including **expected ℓ** from the structure parameters).
+`run-vqc` on `identity` should recover `Hi` at fidelity 1.0.
+
+A trajectoid with 8 trenches and winding 2 piles onto ℓ = −6
+(`winding − n_trenches`). Walkthrough with the dashboard screenshot:
+[docs/trajectoid.md](docs/trajectoid.md).
 
 ## Install
 

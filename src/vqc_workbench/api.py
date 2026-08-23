@@ -18,6 +18,7 @@ from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
 from vqc_workbench.simulation.pipeline import VQCPipeline
 from vqc_workbench.structures.cascade import Cascade, MatchedFilter, compensate_structure
+from vqc_workbench.structures.charge import ChargeForecast, forecast_charge
 from vqc_workbench.utils.io import load_yaml
 
 # Ensure structure kinds are registered.
@@ -95,6 +96,9 @@ class Workbench:
     def compensate(self, structure: Structure) -> Cascade:
         """Structure followed by its inverse thin-element (≈ identity)."""
         return compensate_structure(structure)
+
+    def forecast_charge(self, structure: Structure) -> ChargeForecast:
+        return forecast_charge(structure)
 
     def simulate_modes(self, structure: Structure, **kwargs: Any) -> ModeResult:
         return self.modal.structure_to_modes(structure, **kwargs)

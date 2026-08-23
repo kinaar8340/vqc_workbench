@@ -28,6 +28,21 @@ def kolmogorov_radial_phase_profile(nr: int = 2048, r0: float = 0.15, rng=None) 
     return phase - phase[0]
 
 
+def apply_kolmogorov_phase(
+    field: NDArray[np.complex128],
+    x: NDArray,
+    y: NDArray,
+    turbulence: float,
+    seed: int | None = None,
+) -> NDArray[np.complex128]:
+    """Multiply a 2-D field by a Kolmogorov phase screen (radial interpolation)."""
+    rng = np.random.default_rng(seed)
+    screen = kolmogorov_radial_phase_profile(nr=2048, rng=rng)
+    rho = np.sqrt(np.asarray(x, dtype=float) ** 2 + np.asarray(y, dtype=float) ** 2)
+    phase = np.interp(rho, np.linspace(0.0, 10.0, len(screen)), screen, left=0.0, right=0.0)
+    return field * np.exp(1j * float(turbulence) * phase)
+
+
 @dataclass
 class ModeResult:
     ell: NDArray[np.int64]
@@ -99,6 +114,8 @@ class ModalSimulator:
         grid_size: int | None = None,
         w0: float | None = None,
         incident: str = "gaussian",
+        turbulence: float = 0.0,
+        seed: int | None = None,
     ) -> ModeResult:
         L_max = int(L_max if L_max is not None else self.config.L_max)
         wavelength_nm = float(wavelength_nm if wavelength_nm is not None else self.config.wavelength_nm)
@@ -110,6 +127,11 @@ class ModalSimulator:
         else:
             inc = np.ones_like(x, dtype=np.complex128)
         field = inc * mask
+        turb = float(turbulence)
+        if turb > 0:
+            field = apply_kolmogorov_phase(
+                field, x, y, turb, seed=seed if seed is not None else self.config.seed
+            )
         weights = project_oam_spectrum(field, x, y, L_max=L_max, w0=w0)
         ells = np.arange(-L_max, L_max + 1, dtype=np.int64)
         coeffs = np.array([weights[int(e)] for e in ells], dtype=np.complex128)

@@ -22,6 +22,9 @@ s = wb.load_structure("configs/structures/spiral_phase.yaml")
 
 g2 = g.update(ell=5)                      # immutable copy
 g.to_yaml("out.yaml")
+
+fc = wb.forecast_charge(t)
+print(fc.expected_ell, fc.formula)        # -6,  ℓ = winding − n_trenches …
 ```
 
 Kinds: `spiral_phase`, `binary_grating`, `blazed_grating`, `forked_hologram`,

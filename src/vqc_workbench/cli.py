@@ -14,8 +14,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sim = sub.add_parser("simulate", help="structure → OAM mode spectrum")
     p_sim.add_argument("--kind", default="spiral_phase")
     p_sim.add_argument("--ell", type=int, default=3)
+    p_sim.add_argument("--n-trenches", type=int, default=8)
+    p_sim.add_argument("--winding", type=int, default=2)
     p_sim.add_argument("--L-max", dest="L_max", type=int, default=None)
     p_sim.add_argument("--yaml", type=Path, default=None)
+    p_sim.add_argument("--turbulence", type=float, default=0.0)
 
     p_vqc = sub.add_parser("run-vqc", help="end-to-end VQC pipeline")
     p_vqc.add_argument("--kind", default="identity")
@@ -67,9 +70,19 @@ def main(argv: list[str] | None = None) -> int:
             kwargs = {}
             if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
                 kwargs["ell"] = args.ell
+            if args.kind == "trajectoid":
+                kwargs["n_trenches"] = args.n_trenches
+                kwargs["winding"] = args.winding
             structure = wb.create_structure(args.kind, **kwargs)
-        modes = wb.simulate_modes(structure, L_max=args.L_max)
-        print(f"kind={structure.kind} dominant_ell={modes.dominant_ell()}")
+        forecast = wb.forecast_charge(structure)
+        modes = wb.simulate_modes(structure, L_max=args.L_max, turbulence=args.turbulence)
+        exp = "n/a" if forecast.expected_ell is None else f"{forecast.expected_ell:+d}"
+        print(
+            f"kind={structure.kind} expected_ell={exp}  "
+            f"dominant_ell={modes.dominant_ell():+d}  ⟨ℓ⟩={modes.expectation_ell():.2f}"
+        )
+        if forecast.formula:
+            print(f"  {forecast.formula}")
         for e, c, i in zip(modes.ell, modes.coefficients, modes.intensity):
             if i > 1e-3:
                 print(f"  ell={int(e):+d}  |c|={abs(c):.4g}  I={i:.4f}")

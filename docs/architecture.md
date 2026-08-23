@@ -75,6 +75,23 @@ solver produced the numbers. Results are cached by a SHA-256 of
 
 Compare with `Workbench.compare_backends(structure, ("modal", "scalar"))`.
 
+Meep is opt-in: `simulate_fullwave(..., backend="meep")` raises until
+`VQC_MEEP_RUN=1` and MIT Meep is importable. The FDTD path builds a 2-D
+ε(x,y) from the thin-element phase, samples Ez, and packs a `FullWaveResult`
+through the same LG projector. Tests skip that path unless the env var is set.
+
+## Expected topological charge
+
+`forecast_charge(structure)` turns parameters into an expected ℓ so the UI
+can show the arithmetic next to the measured peak:
+
+| Kind | Formula |
+|------|---------|
+| `spiral_phase` | `ell` |
+| `trajectoid` | `winding − n_trenches` (Jacobi–Anger k = −1 branch) |
+| `forked_hologram` | `ell` (after demodulating the linear carrier) |
+| `identity` / 1-D gratings | `0` |
+
 ## Config
 
 `configs/default.yaml` is the single source of truth for `L_max`, λ, grid,

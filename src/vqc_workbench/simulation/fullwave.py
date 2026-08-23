@@ -117,6 +117,34 @@ def _normalize_intensity(coefficients: NDArray) -> NDArray[np.float64]:
     return mag2 / total
 
 
+def pack_oam_result(
+    field: NDArray[np.complex128],
+    x: NDArray,
+    y: NDArray,
+    *,
+    L_max: int,
+    w0: float,
+    backend: str,
+    extras: dict[str, Any] | None = None,
+) -> FullWaveResult:
+    """Project a 2-D field onto the LG ladder and wrap a FullWaveResult."""
+    weights = project_oam_spectrum(field, x, y, L_max=int(L_max), w0=float(w0))
+    ells = np.arange(-int(L_max), int(L_max) + 1, dtype=np.int64)
+    coeffs = np.array([weights[int(e)] for e in ells], dtype=np.complex128)
+    t = np.diag(coeffs)
+    n = t.shape[0]
+    z = np.zeros((n, n), dtype=np.complex128)
+    return FullWaveResult(
+        backend=backend,
+        ell=ells,
+        coefficients=coeffs,
+        intensity=_normalize_intensity(coeffs),
+        S=np.block([[z, t], [t, z]]),
+        T=t,
+        extras=dict(extras or {}),
+    )
+
+
 class FullWaveCache:
     """In-memory cache keyed by a stable structure/backend hash. Optional disk."""
 
@@ -283,20 +311,13 @@ class ScalarDiffractionBackend(FullWaveBackend):
         lam = max(float(wavelength_nm) * 1e-6, 0.05)
         if abs(float(z)) > 0:
             field = angular_spectrum_propagate(field, dx=dx, wavelength=lam, z=float(z))
-        weights = project_oam_spectrum(field, x, y, L_max=int(L_max), w0=float(w0))
-        ells = np.arange(-int(L_max), int(L_max) + 1, dtype=np.int64)
-        coeffs = np.array([weights[int(e)] for e in ells], dtype=np.complex128)
-        intensity = _normalize_intensity(coeffs)
-        t = np.diag(coeffs)
-        n = t.shape[0]
-        s = np.block([[np.zeros((n, n), dtype=np.complex128), t], [t, np.zeros((n, n), dtype=np.complex128)]])
-        return FullWaveResult(
+        return pack_oam_result(
+            field,
+            x,
+            y,
+            L_max=int(L_max),
+            w0=float(w0),
             backend="scalar",
-            ell=ells,
-            coefficients=coeffs,
-            intensity=intensity,
-            S=s,
-            T=t,
             extras={
                 "z": float(z),
                 "wavelength_nm": float(wavelength_nm),
@@ -327,78 +348,96 @@ class MeepBackend(FullWaveBackend):
         *,
         L_max: int = 8,
         wavelength_nm: float = 1550.0,
-        grid_size: int = 64,
+        grid_size: int = 48,
         w0: float = 1.0,
         extent: float = 4.0,
-        resolution: int = 20,
+        resolution: int = 16,
         **kwargs: Any,
     ) -> FullWaveResult:
         import meep as mp  # type: ignore
 
-        # Thin phase plate as a spatially varying index in a 2-D cell.
-        # Gated by VQC_MEEP_RUN so accidental `pip install meep` stubs cannot
-        # launch a minutes-long FDTD during unit tests.
-        if os.environ.get("VQC_MEEP_RUN", "1") not in {"1", "true", "yes"}:
-            raise FullWaveUnavailable("Meep is installed but VQC_MEEP_RUN is disabled.")
+        # Opt-in FDTD. Default off so `pytest` stays fast even if Meep is present.
+        if os.environ.get("VQC_MEEP_RUN", "").lower() not in {"1", "true", "yes"}:
+            raise FullWaveUnavailable(
+                "Meep is installed. Set VQC_MEEP_RUN=1 to run FDTD "
+                "(spiral / binary grating reference cells)."
+            )
 
         x, y = cartesian_grid(int(grid_size), float(extent))
         mask = structure.to_phase_mask((x, y), float(wavelength_nm))
-        phase = np.angle(mask)
+        ny, nx = mask.shape
         sx = sy = 2.0 * float(extent)
-        cell = mp.Vector3(sx, sy, 0)
-        # Map wrapped phase → ε in a thin slab (n ≈ 1 + φ/(k0 d)).
-        thickness = 0.2
-        n_map = 1.0 + phase / (2.0 * np.pi)
-        eps_map = np.clip(n_map, 1.0, 4.0) ** 2
-        geom = [
-            mp.Block(
-                center=mp.Vector3(0, 0, 0),
-                size=mp.Vector3(sx, thickness, mp.inf),
-                material=mp.MaterialGrid(
-                    grid_size=mp.Vector3(eps_map.shape[1], 1, 1),
-                    medium1=mp.Medium(epsilon=1.0),
-                    medium2=mp.Medium(epsilon=float(np.max(eps_map))),
-                    weights=np.clip((eps_map.mean(axis=0) - 1.0) / max(float(np.max(eps_map)) - 1.0, 1e-9), 0, 1),
-                ),
+        # Thin phase plate → 2-D ε(x,y). n = 1 + φ/2π maps [−π,π] onto ~[0.5, 1.5].
+        n_map = 1.0 + np.angle(mask) / (2.0 * np.pi)
+        eps = np.clip(n_map, 1.0, 2.5) ** 2
+        eps_max = float(np.max(eps))
+        weights = np.clip((eps - 1.0) / max(eps_max - 1.0, 1e-9), 0.0, 1.0)
+        # Meep MaterialGrid wants (Nx, Ny) with x the first axis.
+        weights_mg = np.ascontiguousarray(weights.T)
+
+        try:
+            geom = [
+                mp.Block(
+                    center=mp.Vector3(0, 0, 0),
+                    size=mp.Vector3(sx, sy, mp.inf),
+                    material=mp.MaterialGrid(
+                        grid_size=mp.Vector3(nx, ny),
+                        medium1=mp.Medium(epsilon=1.0),
+                        medium2=mp.Medium(epsilon=eps_max),
+                        weights=weights_mg,
+                    ),
+                )
+            ]
+            src = [
+                mp.Source(
+                    mp.GaussianSource(wavelength=1.0, width=2.0),
+                    component=mp.Ez,
+                    center=mp.Vector3(0, 0, 0),
+                    size=mp.Vector3(sx * 0.9, sy * 0.9, 0),
+                    amp_func=lambda p: float(
+                        np.exp(-(p.x**2 + p.y**2) / max(float(w0) ** 2, 1e-6))
+                    ),
+                )
+            ]
+            sim = mp.Simulation(
+                cell_size=mp.Vector3(sx, sy, 0),
+                geometry=geom,
+                sources=src,
+                resolution=int(resolution),
+                boundary_layers=[mp.PML(0.4)],
             )
-        ]
-        src = [
-            mp.Source(
-                mp.GaussianSource(wavelength=float(wavelength_nm) * 1e-3, width=2.0),
-                component=mp.Ez,
-                center=mp.Vector3(0, -0.4 * sy, 0),
-                size=mp.Vector3(sx * 0.8, 0, 0),
-            )
-        ]
-        sim = mp.Simulation(
-            cell_size=cell,
-            geometry=geom,
-            sources=src,
-            resolution=int(resolution),
-            boundary_layers=[mp.PML(0.5)],
-        )
-        sim.run(until=20)
-        # Sample Ez on a line past the plate and lift it into a 2-D Gaussian
-        # window so the existing OAM projector can consume it.
-        ez = np.array(sim.get_array(center=mp.Vector3(0, 0.3 * sy, 0), size=mp.Vector3(sx, 0, 0), component=mp.Ez))
-        field = gaussian_beam(x, y, w0=float(w0)).astype(np.complex128)
-        line = np.interp(x[0], np.linspace(-extent, extent, ez.size), np.real(ez))
-        field *= line[None, :] * mask
-        weights = project_oam_spectrum(field, x, y, L_max=int(L_max), w0=float(w0))
-        ells = np.arange(-int(L_max), int(L_max) + 1, dtype=np.int64)
-        coeffs = np.array([weights[int(e)] for e in ells], dtype=np.complex128)
-        t = np.diag(coeffs)
-        n = t.shape[0]
-        s = np.block([[np.zeros((n, n), dtype=np.complex128), t], [t, np.zeros((n, n), dtype=np.complex128)]])
-        return FullWaveResult(
+            sim.run(until=12)
+            ez = np.array(sim.get_array(center=mp.Vector3(), size=mp.Vector3(sx, sy, 0), component=mp.Ez))
+        except Exception as exc:
+            raise FullWaveUnavailable(f"Meep FDTD run failed: {exc}") from exc
+
+        # Resample Ez onto the workbench grid and project OAM — same FullWaveResult
+        # contract as modal/scalar. No multiplying back the analytic mask.
+        if ez.ndim == 1:
+            raise FullWaveUnavailable("Meep returned a 1-D Ez array; expected a 2-D plane.")
+        field = _resample_complex(ez.astype(np.complex128), x.shape)
+        return pack_oam_result(
+            field,
+            x,
+            y,
+            L_max=int(L_max),
+            w0=float(w0),
             backend="meep",
-            ell=ells,
-            coefficients=coeffs,
-            intensity=_normalize_intensity(coeffs),
-            S=s,
-            T=t,
-            extras={"resolution": int(resolution), "meep_version": getattr(mp, "__version__", None)},
+            extras={
+                "resolution": int(resolution),
+                "meep_version": getattr(mp, "__version__", None),
+                "kind": structure.kind,
+            },
         )
+
+
+def _resample_complex(src: NDArray[np.complex128], shape: tuple[int, int]) -> NDArray[np.complex128]:
+    """Nearest-neighbor resample of a 2-D field onto ``shape``."""
+    ny, nx = int(shape[0]), int(shape[1])
+    sy, sx = src.shape[:2]
+    yi = np.linspace(0, sy - 1, ny).astype(int)
+    xi = np.linspace(0, sx - 1, nx).astype(int)
+    return src[yi][:, xi]
 
 
 class RCWABackend(FullWaveBackend):
