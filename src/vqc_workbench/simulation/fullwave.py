@@ -390,6 +390,26 @@ def phase_to_slab_index(
     return np.asarray(n_map, dtype=np.float64), meta
 
 
+def _soft_disk_index(
+    n_map: NDArray,
+    x: NDArray,
+    y: NDArray,
+    *,
+    w0: float,
+    inner: float,
+    n_vac: float = 1.0,
+) -> NDArray[np.float64]:
+    """Full 2π helix on a disk; raised-cosine taper to vacuum so the square cell is dark."""
+    rho = np.sqrt(np.asarray(x, dtype=float) ** 2 + np.asarray(y, dtype=float) ** 2)
+    outer = inner + max(0.5 * float(w0), 0.4)
+    t = np.ones_like(rho, dtype=float)
+    ring = (rho > inner) & (rho < outer)
+    t = np.where(rho >= outer, 0.0, t)
+    span = max(outer - inner, 1e-9)
+    t = np.where(ring, 0.5 * (1.0 + np.cos(np.pi * (rho - inner) / span)), t)
+    return np.asarray(n_vac + (np.asarray(n_map, dtype=float) - n_vac) * t, dtype=np.float64)
+
+
 class MeepBackend(FullWaveBackend):
     """FDTD backend. Requires MIT Meep; raises if it is not importable."""
 
@@ -448,9 +468,10 @@ class MeepBackend(FullWaveBackend):
         ny, nx = mask.shape
         res = int(resolution)
         sx = sy = _snap_cell(2.0 * float(extent), res)
-        # Default: a few FDTD pixels thick so (n_hi−n_lo)·d = λ stays a thin plate.
+        w0 = float(w0)
+        # Affordable charge-correct plate: Ex, n(x,y) function, d=0.7λ, Δn·d=λ.
         if kwargs.get("slab_thickness") is None:
-            d = max(3.0 / float(res), 0.15)
+            d = 0.7
         else:
             d = float(kwargs["slab_thickness"])
         lam = 1.0
@@ -459,32 +480,67 @@ class MeepBackend(FullWaveBackend):
             mask,
             thickness=d,
             wavelength=lam,
-            n_lo=float(kwargs.get("slab_n_lo", 1.2)),
+            n_lo=float(kwargs.get("slab_n_lo", 1.0)),
             n_hi=None if kwargs.get("slab_n_hi") is None else float(kwargs["slab_n_hi"]),
             encoding=encoding,
             n0=float(kwargs.get("slab_n0", 1.0)),
             dn_amp=float(kwargs.get("slab_dn", 0.4)),
         )
         d = float(slab_meta["slab_thickness"])
-        eps = n_map**2
-        eps_min = float(np.min(eps))
-        eps_max = float(np.max(eps))
-        weights = np.clip((eps - eps_min) / max(eps_max - eps_min, 1e-9), 0.0, 1.0)
-        weights_mg = np.ascontiguousarray(weights.T.astype(np.float64))
-        pml = float(kwargs.get("pml", 1.2))
-        sz = _snap_cell(float(kwargs.get("sz", 8.0)), res)
+        n_map = _soft_disk_index(n_map, x, y, w0=w0, inner=float(kwargs.get("slab_radius", 1.7 * w0)))
+        profile = str(kwargs.get("slab_profile") or "index")
+        n_glass = float(kwargs.get("slab_n", 1.5))
+        height_weights = None
+        if profile == "height":
+            # Geometric SPP: constant-n ramp, h(φ) = d · φ/2π, n·d = λ.
+            d = float(lam / n_glass)
+            slab_meta["slab_thickness"] = d
+            slab_meta["slab_profile"] = "height"
+            slab_meta["n_glass"] = n_glass
+            slab_meta["phase_depth_rad"] = float(2.0 * np.pi * n_glass * d / lam)
+            phase = np.mod(np.angle(mask), 2.0 * np.pi)
+            rho = np.sqrt(x**2 + y**2)
+            inner = float(kwargs.get("slab_radius", 1.7 * w0))
+            outer = inner + max(0.5 * w0, 0.4)
+            tap = np.ones_like(rho)
+            ring = (rho > inner) & (rho < outer)
+            tap = np.where(rho >= outer, 0.0, tap)
+            tap = np.where(
+                ring,
+                0.5 * (1.0 + np.cos(np.pi * (rho - inner) / max(outer - inner, 1e-9))),
+                tap,
+            )
+            h = d * (phase / (2.0 * np.pi)) * tap
+            nz = max(6, int(round(d * res)))
+            height_weights = np.zeros((nx, ny, nz), dtype=np.float64)
+            dz = d / nz
+            h_xy = np.ascontiguousarray(h.T)  # (x, y) for Meep
+            for iz in range(nz):
+                height_weights[:, :, iz] = (h_xy >= (iz + 0.5) * dz).astype(np.float64)
+            eps_min, eps_max = 1.0, n_glass**2
+            weights_mg = height_weights
+        else:
+            eps = n_map**2
+            eps_min = float(np.min(eps))
+            eps_max = float(np.max(eps))
+            weights = np.clip((eps - eps_min) / max(eps_max - eps_min, 1e-9), 0.0, 1.0)
+            weights_mg = np.ascontiguousarray(weights.T.astype(np.float64))
+            slab_meta["slab_profile"] = "index"
+        pml = float(kwargs.get("pml", 1.0))
+        sz = _snap_cell(float(kwargs.get("sz", 6.0)), res)
         until = float(kwargs.get("until", 40))
-        # Source and monitor sit in vacuum, outside the slab, inside the PML-free core.
-        z_src = -min(0.35 * sz, sz / 2.0 - pml - 0.2)
-        z_mon = -z_src
-        w0 = float(w0)
+        # Source in vacuum; monitor just downstream of the plate (near-field helix).
+        z_src = -min(1.2, sz / 2.0 - pml - 0.25)
+        z_mon = 0.5 * d + 0.35
+        if z_mon > sz / 2.0 - pml - 0.2:
+            z_mon = sz / 2.0 - pml - 0.2
         from scipy.interpolate import RegularGridInterpolator
 
         n_interp = RegularGridInterpolator(
             (np.asarray(y[:, 0], dtype=float), np.asarray(x[0, :], dtype=float)),
             n_map,
             bounds_error=False,
-            fill_value=float(np.min(n_map)),
+            fill_value=1.0,
         )
 
         def _amp(p):
@@ -493,18 +549,23 @@ class MeepBackend(FullWaveBackend):
         def _mat(p):
             return mp.Medium(index=float(n_interp((p.y, p.x))))
 
-        use_func = str(kwargs.get("slab_material") or "grid") == "function"
+        use_func = profile != "height" and str(kwargs.get("slab_material") or "function") != "grid"
+        # Transverse Ex: z-propagating paraxial field (Ez is longitudinal).
+        pol = str(kwargs.get("component") or "Ex")
+        src_comp = getattr(mp, pol)
+        dft_comp = src_comp
 
         try:
             if use_func:
                 plate_mat: Any = _mat
             else:
+                gz = int(weights_mg.shape[2]) if weights_mg.ndim == 3 else 1
                 plate_mat = mp.MaterialGrid(
-                    grid_size=mp.Vector3(nx, ny, 1),
+                    grid_size=mp.Vector3(nx, ny, gz),
                     medium1=mp.Medium(epsilon=eps_min),
                     medium2=mp.Medium(epsilon=eps_max),
                     weights=weights_mg,
-                    do_averaging=True,
+                    do_averaging=profile != "height",
                 )
             geom = [
                 mp.Block(
@@ -516,7 +577,7 @@ class MeepBackend(FullWaveBackend):
             src = [
                 mp.Source(
                     mp.GaussianSource(frequency=1.0 / lam, width=2.0),
-                    component=mp.Ez,
+                    component=src_comp,
                     center=mp.Vector3(0, 0, z_src),
                     size=mp.Vector3(sx * 0.9, sy * 0.9, 0),
                     amp_func=_amp,
@@ -532,14 +593,12 @@ class MeepBackend(FullWaveBackend):
                 eps_averaging=False,
             )
             dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
-            dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
+            dft = sim.add_dft_fields([dft_comp], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
             sim.run(until=until)
-            ez = np.array(sim.get_dft_array(dft, mp.Ez, 0), dtype=np.complex128)
+            ez = np.array(sim.get_dft_array(dft, dft_comp, 0), dtype=np.complex128)
         except Exception as exc:
             raise FullWaveUnavailable(f"Meep FDTD run failed: {exc}") from exc
 
-        # Resample Ez onto the workbench grid and project OAM — same FullWaveResult
-        # contract as modal/scalar. No multiplying back the analytic mask.
         if ez.ndim == 1:
             raise FullWaveUnavailable("Meep returned a 1-D Ez array; expected a 2-D plane.")
         field = _resample_complex(np.transpose(np.asarray(ez, dtype=np.complex128)), x.shape)
@@ -561,7 +620,12 @@ class MeepBackend(FullWaveBackend):
                 z_mon=z_mon,
                 kind=structure.kind,
                 meep_version=getattr(mp, "__version__", None),
-                extra={"until": until, "slab_material": "function" if use_func else "grid", **slab_meta},
+                extra={
+                    "until": until,
+                    "slab_material": "function" if use_func else "grid",
+                    "component": pol,
+                    **slab_meta,
+                },
             ),
         )
 

@@ -110,6 +110,18 @@ def test_fullwave_cache_hits(monkeypatch):
     assert a.dominant_ell() == b.dominant_ell()
 
 
+def test_soft_disk_tapers_to_vacuum():
+    from vqc_workbench.simulation.fullwave import _soft_disk_index
+    from vqc_workbench.utils.grid import cartesian_grid
+
+    x, y = cartesian_grid(32, 3.0)
+    n = np.full(x.shape, 2.0)
+    out = _soft_disk_index(n, x, y, w0=1.0, inner=1.7)
+    rho = np.sqrt(x**2 + y**2)
+    assert float(out[rho < 1.0].mean()) == pytest.approx(2.0, abs=0.05)
+    assert float(out[rho > 2.5].max()) == pytest.approx(1.0, abs=0.05)
+
+
 def test_phase_to_slab_index_encodes_full_helix():
     from vqc_workbench.simulation.fullwave import phase_to_slab_index
     from vqc_workbench.utils.grid import cartesian_grid, polar_from_cartesian
@@ -204,18 +216,18 @@ def test_meep_thin_plate_uses_full_2pi_encoding():
         L_max=4,
         grid_size=32,
         extent=3.5,
-        resolution=16,
+        resolution=12,
         layout="thin_plate_3d",
         pml=1.0,
         sz=6.0,
-        until=40,
+        until=32,
         w0=1.0,
         use_cache=False,
     )
     assert result.extras.get("encoding") == "full_2pi"
+    assert result.extras.get("component") == "Ex"
     assert result.extras.get("phase_depth_rad") == pytest.approx(2.0 * np.pi, rel=0.05)
-    # Charge recovery at affordable res is still a negative (ℓ ≠ +1). Encoding
-    # is the 2π map; source-imprint remains the validated FDTD charge path.
+    assert result.dominant_ell() == 1
 
 
 @pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")

@@ -1,0 +1,27 @@
+{
+  "expected_ell": 1,
+  "dominant_ell": 1,
+  "expectation_ell": 1.8036335764524933,
+  "cosine_vs_modal": 0.7087971212448013,
+  "purity": 0.24642637552265975,
+  "intensity": {
+    "-4": 0.08026874360204876,
+    "-3": 0.006596686936156775,
+    "-2": 0.002253963943360486,
+    "1": 0.35185644724326814,
+    "2": 0.09599661996858025,
+    "3": 0.2419076924490988,
+    "4": 0.2199918806046655
+  },
+  "extras": {
+    "component": "Ex",
+    "slab_material": "function",
+    "slab_profile": "index",
+    "slab_thickness": 0.7,
+    "n_lo": 1.0,
+    "n_hi": 2.428571428571429,
+    "encoding": "full_2pi",
+    "phase_depth_rad": 6.283185307179587,
+    "resolution": 12
+  }
+}

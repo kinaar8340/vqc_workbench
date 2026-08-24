@@ -93,10 +93,20 @@ n(\varphi) = n_\mathrm{lo} + (n_\mathrm{hi}-n_\mathrm{lo})\,\frac{\varphi \bmod 
 \quad (n_\mathrm{hi}-n_\mathrm{lo})\,d = \lambda
 \]
 
-so a 2π plate is not clipped. Default thickness is three FDTD pixels.
-At res=16, spiral ℓ=+1 still **does not** peak on +1 (dominant ℓ=+4,
-cosine vs modal 0.085). Source-imprint remains the charge-correct FDTD
-path. `slab_encoding="legacy"` restores the old map.
+so a 2π plate is not clipped.
+
+**Charge-correct defaults** (res=12, ~30 s): transverse **Ex**, `n(x,y)` via a
+position-dependent Medium (not a transposed MaterialGrid), `d = 0.7λ`,
+`n ∈ [1, 2.43]`, soft disk. Spiral ℓ=+1 **peaks at +1**, cosine vs modal 0.709,
+⟨ℓ⟩ ≈ 1.80. Source-imprint is still cleaner (cosine 0.999); the slab is the
+Maxwell plate.
+
+![Spiral dielectric slab vs modal](figures/spiral_thin_plate_charge.png)
+
+JSON: [`figures/spiral_thin_plate_charge.json`](figures/spiral_thin_plate_charge.json).
+
+`slab_encoding="legacy"` restores the old clipped map. `component="Ez"` is
+longitudinal for +z and does not imprint a paraxial helix.
 
 JSON: [`figures/thin_plate_3d_hires.json`](figures/thin_plate_3d_hires.json).
 

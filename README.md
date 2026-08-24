@@ -55,8 +55,8 @@ Optional FDTD (conda env `vqc-meep`, pymeep 1.34), gated on `VQC_MEEP_RUN=1`:
 Validated Meep **source-imprint** cells: trajectoid ℓ = −6 (res 16→32),
 spiral ℓ = +1, and metasurface `ell_target=+1`. Binary / blazed / forked
 agree with the modal projector in spectral shape. Dielectric slab
-(`thin_plate_3d`) is not yet charge-correct (still ℓ = −4 at res 16–20).
-See [docs/meep_validation.md](docs/meep_validation.md).
+(`thin_plate_3d`) at res=12 with Ex and a 0.7λ n(x,y) plate **peaks at
+ℓ=+1** (cosine 0.709). See [docs/meep_validation.md](docs/meep_validation.md).
 
 ## Install
 
@@ -144,12 +144,11 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 |-------|--------|
 | 0 Inventory + scaffolding + Structure → modes API | **this tree** |
 | 1 Analytical gratings / metasurfaces + dashboard | **this tree** |
-| 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint for trajectoid/spiral; RCWA still opt-in) |
+| 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint + charge-correct slab; RCWA layer stack) |
 | 3 Inverse design, oam_flux lattice, HITL, live generate_shell | **this tree** |
 
-Phase 2 still open: a dielectric slab that recovers helical charge at
-affordable FDTD resolution. Disk cache is on (`outputs/fullwave_cache/`).
-Details:
+Phase 2 remaining: none of the original interface items. Disk cache is on
+(`outputs/fullwave_cache/`). Details:
 [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License

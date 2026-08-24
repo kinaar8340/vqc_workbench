@@ -90,8 +90,8 @@ Meep is opt-in: `simulate_fullwave(..., backend="meep")` raises until
 `VQC_MEEP_RUN=1` and MIT Meep is importable. Default layout is
 **source-imprint**: complex amp = Gaussian × mask, 3-D vacuum FDTD, DFT Ez
 on a downstream plane, then the same LG projector. `layout=thin_plate_3d`
-is a dielectric slab that does **not** yet recover charge at res 12–16
-(see [meep_validation.md](meep_validation.md)). Tests skip FDTD unless
+is a dielectric n(x,y) plate (transverse Ex, d=0.7λ) that peaks on ℓ=+1
+at res=12 (see [meep_validation.md](meep_validation.md)). Tests skip FDTD unless
 the env var is set. Canonical figure:
 `docs/figures/trajectoid_backend_spectra.png`.
 
