@@ -40,6 +40,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
 | flux_hopf_lib | quaternion / Hopf fingerprint | optional (local fallback) |
 | oam_flux | lattice coupling, vectorized photonics | optional |
 | vqc_proto | Orbital Braille typehead, SLM playlist | optional (local geometry) |
+| vqc_demo | Projector proxy + SLM hologram package | optional (HITL) |
 | flux_trajectoid | 3-D rolling shells | optional (analytic trenches) |
 | hfb | vortex-ring SLM / analog gravity | optional |
 | qga | geometric design rules (docs / later) | optional |
@@ -48,6 +49,12 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
 `vqc_proto/src/photonics.py` is **not** imported: it has import-time I/O
 (prints `L_max`, loads YAML). The workbench uses a side-effect-free SciPy
 LG / helical engine that matches `oam_flux.vqc_photonics`.
+
+## HITL
+
+`Workbench.hitl` writes an SLM phase playlist and plays the same payload
+through the vqc_demo projector proxy (intensity RGB, VPL-HW20A class).
+See [hitl.md](hitl.md).
 
 ## Two projectors
 

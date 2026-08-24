@@ -100,6 +100,8 @@ vqc-workbench dashboard
 - Inverse design: search structure parameters for a target ℓ or VQC fidelity
   ([docs/inverse.md](docs/inverse.md)).
 - Live `oam_flux` lattice coupling ([docs/lattice.md](docs/lattice.md)).
+- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy
+  ([docs/hitl.md](docs/hitl.md)).
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 [docs/adding_a_structure.md](docs/adding_a_structure.md), and
@@ -112,7 +114,7 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 | 0 Inventory + scaffolding + Structure → modes API | **this tree** |
 | 1 Analytical gratings / metasurfaces + dashboard | **this tree** |
 | 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep/RCWA still opt-in) |
-| 3 Inverse design, live oam_flux lattice, hardware-in-the-loop | later |
+| 3 Inverse design, live oam_flux lattice, hardware-in-the-loop | **this tree** |
 
 ## License
 

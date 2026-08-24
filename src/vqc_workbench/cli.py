@@ -67,6 +67,28 @@ def main(argv: list[str] | None = None) -> int:
         help="print full result JSON including per-step history",
     )
 
+    p_hitl = sub.add_parser("hitl", help="SLM playlist → vqc_demo projector proxy")
+    p_hitl.add_argument("--payload", default="I live in Oregon")
+    p_hitl.add_argument("--kind", default=None, help="optional structure for the phase playlist")
+    p_hitl.add_argument("--ell", type=int, default=3)
+    p_hitl.add_argument("--n-trenches", type=int, default=8)
+    p_hitl.add_argument("--winding", type=int, default=2)
+    p_hitl.add_argument("--device", default="generic_512")
+    p_hitl.add_argument(
+        "--channel",
+        default="projector",
+        help="clean | projector | harsh | kolmogorov | bmgl",
+    )
+    p_hitl.add_argument("--frames", type=int, default=8)
+    p_hitl.add_argument("--out", type=Path, default=None, help="write playlist under this directory")
+    p_hitl.add_argument(
+        "--full",
+        action="store_true",
+        help="use 1920×1080 VPL-HW20A profile (default is the fast 320×180 loopback)",
+    )
+    p_hitl.add_argument("--capture", type=Path, default=None, help="decode an existing MP4 or PNG dir")
+    p_hitl.add_argument("--json", action="store_true", help="print full result JSON")
+
     p_inv = sub.add_parser("inverse", help="inverse-design structure parameters")
     p_inv.add_argument("--kind", default="trajectoid")
     p_inv.add_argument("--objective", choices=["charge", "forecast", "fidelity"], default="charge")
@@ -195,6 +217,32 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(result.summary())
         return 0
+
+    if args.cmd == "hitl":
+        structure = None
+        if args.kind:
+            kwargs: dict = {}
+            if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
+                kwargs["ell"] = args.ell
+            if args.kind == "trajectoid":
+                kwargs["n_trenches"] = args.n_trenches
+                kwargs["winding"] = args.winding
+            structure = wb.create_structure(args.kind, **kwargs)
+        result = wb.hitl(
+            args.payload,
+            structure,
+            device=args.device,
+            channel=args.channel,
+            n_frames=args.frames,
+            out=args.out,
+            full=args.full,
+            capture=args.capture,
+        )
+        if args.json:
+            print(json.dumps(result.as_dict(), indent=2, default=str))
+        else:
+            print(result.summary())
+        return 0 if result.payload_match and result.crc_ok else 2
 
     if args.cmd == "inverse":
         result = wb.inverse_design(

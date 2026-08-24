@@ -38,7 +38,7 @@
 
 - Inverse-design loop (modal inner loop; charge / forecast / fidelity objectives)
 - Live `oam_flux` lattice coupling (deposit + κ sweep + OAM back-action)
-- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy — next
+- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy
 - Live `flux_trajectoid.generate_shell` instead of analytic trenches
 - Keep qga theorems out of the physical hypotheses (docs-only)
 

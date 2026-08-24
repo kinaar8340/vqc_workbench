@@ -9,8 +9,8 @@ beside (GitHub: [kinaar8340](https://github.com/kinaar8340)).
 |------|---------------------------|
 | **vqc_proto** | Orbital Braille typehead, SLM hologram export, quaternion–OAM coupling, QEC stubs. Local PWM geometry is inlined so the workbench runs without it. |
 | **vqc** / **vqc_sims_public** | `photonics.py` vectorized multi-ℓ propagation + Kolmogorov screens. **Not imported** (import-time side effects); logic ported to `simulation/modal.py`. |
-| **vqc_demo** | Projector+camera intensity proxy, SLM presets, CRC / majority QEC. Device table copied into `export/slm.py`. |
-| **oam_flux** | Helical packets on a gauged Hopf lattice, `PhotonicsConfig` / `propagate_multi_ell_vectorized`. Optional live coupling later. |
+| **vqc_demo** | Projector+camera intensity proxy, SLM presets, CRC / majority QEC. Live HITL via `Workbench.hitl` ([docs/hitl.md](hitl.md)). Device table copied into `export/slm.py`. |
+| **oam_flux** | Helical packets on a gauged Hopf lattice, `PhotonicsConfig` / `propagate_multi_ell_vectorized`. Live coupling via `couple_to_lattice`. |
 | **flux_trajectoid** | Trajectoid shells + phase trenches + SLM package. Analytic trench fallback in `structures/trajectoid.py`. |
 | **hfb** | Flux-bubble vortex arrays, `optics/slm_export.py`, VQC-proto bridge pattern (copied as `adapters.py`). |
 

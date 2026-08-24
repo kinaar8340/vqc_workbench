@@ -67,6 +67,7 @@ fw = wb.simulate_fullwave(g, backend="scalar")
 ```python
 wb.export_slm(b, "outputs/slm_phase.npy", device="holoeye_pluto_2")
 wb.export_hologram_stack(b, "outputs/stack", n_frames=8)
+hit = wb.hitl("I live in Oregon", g, channel="projector", out="outputs/hitl")
 ```
 
 Presets: `generic_512`, `holoeye_pluto_2`, `meadowlark_512`, `thorlabs_1080p`.
@@ -83,6 +84,7 @@ vqc-workbench export-slm --kind orbital_braille --out outputs/slm
 vqc-workbench inverse --kind trajectoid --target-ell -6
 vqc-workbench couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
 vqc-workbench couple --kind trajectoid --sweep-kappa 0.80,0.85,0.89 --steps 4 --json
+vqc-workbench hitl --payload "I live in Oregon" --kind spiral_phase --ell 3 --channel projector
 vqc-workbench dashboard --port 8501
 ```
 

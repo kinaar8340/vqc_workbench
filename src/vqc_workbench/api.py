@@ -15,6 +15,7 @@ from vqc_workbench.export.slm import export_slm
 from vqc_workbench.simulation.compare import compare_many, compare_spectra
 from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
 from vqc_workbench.simulation.inverse import InverseDesigner, InverseResult
+from vqc_workbench.simulation.hitl import HITLResult, run_hitl
 from vqc_workbench.simulation.lattice import LatticeCouplingResult, couple_modes_to_lattice
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
@@ -203,6 +204,35 @@ class Workbench:
             compensate=compensate,
             param_names=param_names,
             seed_params=seed_params,
+        )
+
+    def hitl(
+        self,
+        payload: bytes | str = "I live in Oregon",
+        structure: Structure | None = None,
+        *,
+        device: str | None = None,
+        channel: str = "projector",
+        n_frames: int = 8,
+        out: str | Path | None = None,
+        full: bool = False,
+        capture: str | Path | None = None,
+        n_orbs: int = 4,
+        grid_size: int | None = None,
+    ) -> HITLResult:
+        """SLM playlist plus vqc_demo projector-proxy loopback (or a capture decode)."""
+        return run_hitl(
+            payload,
+            structure,
+            device=device or self.config.slm_device,
+            channel=channel,
+            n_frames=n_frames,
+            out=out,
+            full=full,
+            capture=capture,
+            n_orbs=n_orbs,
+            wavelength_nm=self.config.wavelength_nm,
+            grid_size=grid_size,
         )
 
     def export_slm(
