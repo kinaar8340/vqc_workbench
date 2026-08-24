@@ -70,8 +70,10 @@ See [hitl.md](hitl.md).
 
 Every full-wave backend returns a `FullWaveResult` (`ell`, `coefficients`,
 `intensity`, optional `S` / `T`) so the VQC pipeline does not care which
-solver produced the numbers. Results are cached by a SHA-256 of
-`(kind, params, backend, L_max, λ, grid)`.
+solver produced the numbers. Results are cached in memory and on disk
+under `outputs/fullwave_cache/` (SHA-256 of kind, params, backend, L_max,
+λ, grid). Set `VQC_FULLWAVE_CACHE=0` or `fullwave.cache_dir: ""` to disable
+the disk.
 
 - **modal** (default): thin-element phase mask + LG / helical projection +
   vectorized z-propagation with optional Kolmogorov mixing.

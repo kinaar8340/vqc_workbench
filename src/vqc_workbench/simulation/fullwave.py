@@ -327,6 +327,69 @@ class ScalarDiffractionBackend(FullWaveBackend):
         )
 
 
+def phase_to_slab_index(
+    mask: NDArray,
+    *,
+    thickness: float = 1.0,
+    wavelength: float = 1.0,
+    n_lo: float = 1.2,
+    n_hi: float | None = None,
+    encoding: str = "full_2pi",
+    n0: float = 1.0,
+    dn_amp: float = 0.4,
+) -> tuple[NDArray[np.float64], dict[str, Any]]:
+    """Map a complex thin-element mask onto a dielectric index n(x,y).
+
+    ``full_2pi`` (default) puts the wrapped phase onto ``[n_lo, n_hi]`` with
+    ``(n_hi − n_lo) · d = λ`` so a 2π helix is not clipped to vacuum.
+    ``legacy`` is the old ``n = clip(1 + φ λ / 2π d)`` path (charge-wrong).
+    """
+    d = max(float(thickness), 1e-9)
+    lam = float(wavelength)
+    enc = str(encoding or "full_2pi")
+    if enc == "legacy":
+        if float(n0) > 1.0:
+            n_map = float(n0) + float(dn_amp) * (np.angle(mask) / np.pi)
+            n_map = np.clip(n_map, 1.01, 2.8)
+            meta = {
+                "encoding": "legacy_centered",
+                "slab_n0": float(n0),
+                "slab_dn": float(dn_amp),
+                "slab_thickness": d,
+                "wavelength": lam,
+            }
+        else:
+            delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
+            n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
+            meta = {
+                "encoding": "legacy_clip",
+                "slab_n0": 1.0,
+                "slab_dn": None,
+                "slab_thickness": d,
+                "wavelength": lam,
+            }
+        return np.asarray(n_map, dtype=np.float64), meta
+
+    n_lo = float(n_lo)
+    if n_hi is None:
+        n_hi = n_lo + lam / d
+    n_hi = float(n_hi)
+    if n_hi <= n_lo:
+        raise ValueError("slab n_hi must be greater than n_lo")
+    phase = np.mod(np.angle(mask), 2.0 * np.pi)
+    n_map = n_lo + (n_hi - n_lo) * (phase / (2.0 * np.pi))
+    depth = 2.0 * np.pi * (n_hi - n_lo) * d / lam
+    meta = {
+        "encoding": "full_2pi",
+        "n_lo": n_lo,
+        "n_hi": n_hi,
+        "slab_thickness": d,
+        "wavelength": lam,
+        "phase_depth_rad": float(depth),
+    }
+    return np.asarray(n_map, dtype=np.float64), meta
+
+
 class MeepBackend(FullWaveBackend):
     """FDTD backend. Requires MIT Meep; raises if it is not importable."""
 
@@ -385,19 +448,24 @@ class MeepBackend(FullWaveBackend):
         ny, nx = mask.shape
         res = int(resolution)
         sx = sy = _snap_cell(2.0 * float(extent), res)
-        # Thin phase plate in 3-D: Δn · d = φ λ / 2π  (λ = 1 Meep unit).
-        d = float(kwargs.get("slab_thickness", 0.5))
-        lam = 1.0
-        n0 = float(kwargs.get("slab_n0", 1.0))
-        dn_amp = float(kwargs.get("slab_dn", 0.4))
-        if n0 > 1.0:
-            # Centered index so both signs of φ survive. The legacy n=1+clip
-            # path maps negative phase onto vacuum and kills the helix.
-            n_map = n0 + dn_amp * (np.angle(mask) / np.pi)
-            n_map = np.clip(n_map, 1.01, 2.8)
+        # Default: a few FDTD pixels thick so (n_hi−n_lo)·d = λ stays a thin plate.
+        if kwargs.get("slab_thickness") is None:
+            d = max(3.0 / float(res), 0.15)
         else:
-            delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
-            n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
+            d = float(kwargs["slab_thickness"])
+        lam = 1.0
+        encoding = str(kwargs.get("slab_encoding") or "full_2pi")
+        n_map, slab_meta = phase_to_slab_index(
+            mask,
+            thickness=d,
+            wavelength=lam,
+            n_lo=float(kwargs.get("slab_n_lo", 1.2)),
+            n_hi=None if kwargs.get("slab_n_hi") is None else float(kwargs["slab_n_hi"]),
+            encoding=encoding,
+            n0=float(kwargs.get("slab_n0", 1.0)),
+            dn_amp=float(kwargs.get("slab_dn", 0.4)),
+        )
+        d = float(slab_meta["slab_thickness"])
         eps = n_map**2
         eps_min = float(np.min(eps))
         eps_max = float(np.max(eps))
@@ -410,21 +478,39 @@ class MeepBackend(FullWaveBackend):
         z_src = -min(0.35 * sz, sz / 2.0 - pml - 0.2)
         z_mon = -z_src
         w0 = float(w0)
+        from scipy.interpolate import RegularGridInterpolator
+
+        n_interp = RegularGridInterpolator(
+            (np.asarray(y[:, 0], dtype=float), np.asarray(x[0, :], dtype=float)),
+            n_map,
+            bounds_error=False,
+            fill_value=float(np.min(n_map)),
+        )
 
         def _amp(p):
             return float(np.exp(-(p.x**2 + p.y**2) / max(w0**2, 1e-6)))
 
+        def _mat(p):
+            return mp.Medium(index=float(n_interp((p.y, p.x))))
+
+        use_func = str(kwargs.get("slab_material") or "grid") == "function"
+
         try:
+            if use_func:
+                plate_mat: Any = _mat
+            else:
+                plate_mat = mp.MaterialGrid(
+                    grid_size=mp.Vector3(nx, ny, 1),
+                    medium1=mp.Medium(epsilon=eps_min),
+                    medium2=mp.Medium(epsilon=eps_max),
+                    weights=weights_mg,
+                    do_averaging=True,
+                )
             geom = [
                 mp.Block(
                     center=mp.Vector3(0, 0, 0),
                     size=mp.Vector3(sx, sy, d),
-                    material=mp.MaterialGrid(
-                        grid_size=mp.Vector3(nx, ny, 1),
-                        medium1=mp.Medium(epsilon=eps_min),
-                        medium2=mp.Medium(epsilon=eps_max),
-                        weights=weights_mg,
-                    ),
+                    material=plate_mat,
                 )
             ]
             src = [
@@ -443,6 +529,7 @@ class MeepBackend(FullWaveBackend):
                 resolution=int(resolution),
                 boundary_layers=[mp.PML(pml)],
                 dimensions=3,
+                eps_averaging=False,
             )
             dft_vol = mp.Volume(center=mp.Vector3(0, 0, z_mon), size=mp.Vector3(sx, sy, 0))
             dft = sim.add_dft_fields([mp.Ez], 1.0 / lam, 1.0 / lam, 1, where=dft_vol)
@@ -474,12 +561,7 @@ class MeepBackend(FullWaveBackend):
                 z_mon=z_mon,
                 kind=structure.kind,
                 meep_version=getattr(mp, "__version__", None),
-                extra={
-                    "slab_thickness": d,
-                    "until": until,
-                    "slab_n0": n0,
-                    "slab_dn": dn_amp if n0 > 1.0 else None,
-                },
+                extra={"until": until, "slab_material": "function" if use_func else "grid", **slab_meta},
             ),
         )
 

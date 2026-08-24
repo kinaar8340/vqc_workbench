@@ -13,7 +13,7 @@ from vqc_workbench.core.structure import Structure
 from vqc_workbench.export.hologram import export_hologram_stack
 from vqc_workbench.export.slm import export_slm
 from vqc_workbench.simulation.compare import compare_many, compare_spectra
-from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
+from vqc_workbench.simulation.fullwave import FullWaveCache, FullWaveEngine, FullWaveResult
 from vqc_workbench.simulation.inverse import InverseDesigner, InverseResult
 from vqc_workbench.simulation.hitl import HITLResult, run_hitl
 from vqc_workbench.simulation.lattice import LatticeCouplingResult, couple_modes_to_lattice
@@ -42,7 +42,10 @@ class Workbench:
             config=self.config,
         )
         self.ecosystem: EcosystemStatus = probe_ecosystem()
-        self.fullwave = FullWaveEngine(modal=self.modal)
+        self.fullwave = FullWaveEngine(
+            cache=FullWaveCache(disk_dir=self.config.fullwave_cache_dir),
+            modal=self.modal,
+        )
 
     def kinds(self) -> list[str]:
         return available_kinds()

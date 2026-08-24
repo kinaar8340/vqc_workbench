@@ -34,11 +34,12 @@
 - Metasurface `ell_target=+1` matches spiral (Meep ℓ=+1, cosine 0.999)
 - Higher-res `thin_plate_3d` spiral (res 16, 20) still charge-wrong (ℓ=−4)
 - RCWA layer stack via grcwa / nannos (`FullWaveResult`, no scalar stand-in)
+- `thin_plate_3d` default `full_2pi` index map (`(n_hi−n_lo)·d = λ`); charge still not recovered at res 16
+- Full-wave disk cache under `outputs/fullwave_cache/` (`VQC_FULLWAVE_CACHE=0` to disable)
 
 ## Phase 2 remaining
 
-- Dielectric slab (`thin_plate_3d`) that recovers helical charge
-- Disk cache under `outputs/fullwave_cache/` wired through config
+- Dielectric slab (`thin_plate_3d`) that recovers helical charge at affordable FDTD res
 
 ## Done (Phase 3)
 

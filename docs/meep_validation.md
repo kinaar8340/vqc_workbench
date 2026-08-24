@@ -83,7 +83,24 @@ Figures: [`binary_grating_backend_spectra.png`](figures/binary_grating_backend_s
 [`metasurface_backend_spectra.png`](figures/metasurface_backend_spectra.png).
 JSON: [`figures/meep_cells.json`](figures/meep_cells.json).
 
-## 5. Higher-res dielectric slab (still a negative)
+## 5. Dielectric slab encoding (`full_2pi`)
+
+The old map `n = clip(1 + φ λ / 2π d)` sent negative helix onto vacuum.
+The default is now
+
+\[
+n(\varphi) = n_\mathrm{lo} + (n_\mathrm{hi}-n_\mathrm{lo})\,\frac{\varphi \bmod 2\pi}{2\pi},
+\quad (n_\mathrm{hi}-n_\mathrm{lo})\,d = \lambda
+\]
+
+so a 2π plate is not clipped. Default thickness is three FDTD pixels.
+At res=16, spiral ℓ=+1 still **does not** peak on +1 (dominant ℓ=+4,
+cosine vs modal 0.085). Source-imprint remains the charge-correct FDTD
+path. `slab_encoding="legacy"` restores the old map.
+
+JSON: [`figures/thin_plate_3d_hires.json`](figures/thin_plate_3d_hires.json).
+
+## 5b. Higher-res dielectric slab (still a negative)
 
 Smaller cell than §3 (extent 3.5, sz=6, pml=1.0) so res can go up.
 
@@ -92,6 +109,7 @@ Smaller cell than §3 (extent 3.5, sz=6, pml=1.0) so res can go up.
 | spiral ell=+1 | 16 | 1 + clip (legacy) | −4 | 0.113 |
 | spiral ell=+1 | 20 | 1 + clip | −4 | 0.096 |
 | spiral ell=+1 | 16 | n0=1.5 ± 0.4 φ/π | −4 | 0.098 |
+| spiral ell=+1 | 16 | **full_2π**, 3-px plate | +4 | 0.085 |
 
 Raising resolution made cosine **worse**, not better. Centering the index
 so negative phase is not vacuum also failed at res=16. Source-imprint is

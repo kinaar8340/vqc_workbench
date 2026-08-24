@@ -35,6 +35,9 @@ export:
   extent_mm: 4.0
   bit_depth: 8
 
+fullwave:
+  cache_dir: outputs/fullwave_cache   # set empty to disable; VQC_FULLWAVE_CACHE=0 also disables
+
 lattice:
   kappa: 0.85
   ell: 3

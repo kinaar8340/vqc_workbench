@@ -61,6 +61,9 @@ result = wb.run_vqc(g, b"Hi", compensate=True)
 
 modal_vs_scalar = wb.compare_backends(g, ("modal", "scalar"), z=0.0)
 fw = wb.simulate_fullwave(g, backend="scalar")
+# Meep: layout="source_imprint" (charge-correct) or "thin_plate_3d"
+# RCWA: backend="rcwa"  (pip install grcwa)
+# Disk cache: outputs/fullwave_cache/  (VQC_FULLWAVE_CACHE=0 to disable)
 ```
 
 ## Export

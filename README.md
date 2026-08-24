@@ -147,7 +147,9 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 | 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint for trajectoid/spiral; RCWA still opt-in) |
 | 3 Inverse design, oam_flux lattice, HITL, live generate_shell | **this tree** |
 
-Phase 2 still open: a charge-correct dielectric slab, disk cache. Details:
+Phase 2 still open: a dielectric slab that recovers helical charge at
+affordable FDTD resolution. Disk cache is on (`outputs/fullwave_cache/`).
+Details:
 [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License

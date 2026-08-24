@@ -99,7 +99,8 @@ def test_scalar_vs_modal_spiral():
     assert cmp["cosine"] > 0.98
 
 
-def test_fullwave_cache_hits():
+def test_fullwave_cache_hits(monkeypatch):
+    monkeypatch.setenv("VQC_FULLWAVE_CACHE", "0")
     wb = Workbench()
     g = wb.create_grating(kind="spiral_phase", ell=1)
     a = wb.simulate_fullwave(g, backend="scalar", L_max=4, grid_size=48, z=0.0)
@@ -107,6 +108,40 @@ def test_fullwave_cache_hits():
     assert a.cached is False
     assert b.cached is True
     assert a.dominant_ell() == b.dominant_ell()
+
+
+def test_phase_to_slab_index_encodes_full_helix():
+    from vqc_workbench.simulation.fullwave import phase_to_slab_index
+    from vqc_workbench.utils.grid import cartesian_grid, polar_from_cartesian
+
+    x, y = cartesian_grid(48, 2.0)
+    _, phi = polar_from_cartesian(x, y)
+    mask = np.exp(1j * phi)
+    n_map, meta = phase_to_slab_index(mask, thickness=1.0, wavelength=1.0, n_lo=1.2)
+    assert meta["encoding"] == "full_2pi"
+    assert meta["phase_depth_rad"] == pytest.approx(2.0 * np.pi)
+    assert float(n_map.min()) >= 1.2 - 1e-9
+    assert float(n_map.max()) <= meta["n_hi"] + 1e-9
+    # Both signs of the helix survive (not collapsed onto n=1).
+    assert float(n_map.max() - n_map.min()) == pytest.approx(meta["n_hi"] - 1.2, abs=0.05)
+
+
+def test_fullwave_disk_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("VQC_FULLWAVE_CACHE", str(tmp_path))
+    from vqc_workbench.simulation.fullwave import FullWaveCache, FullWaveEngine
+
+    wb = Workbench()
+    g = wb.create_grating(kind="spiral_phase", ell=1)
+    eng = FullWaveEngine(cache=FullWaveCache(disk_dir=tmp_path), modal=wb.modal)
+    a = eng.run(g, backend="scalar", L_max=4, grid_size=32, z=0.0)
+    files = list(tmp_path.glob("*.npz"))
+    assert len(files) == 1
+    eng2 = FullWaveEngine(cache=FullWaveCache(disk_dir=tmp_path), modal=wb.modal)
+    b = eng2.run(g, backend="scalar", L_max=4, grid_size=32, z=0.0)
+    assert a.cached is False
+    assert b.cached is True
+    assert b.dominant_ell() == a.dominant_ell()
+    assert np.allclose(a.intensity, b.intensity)
 
 
 def test_meep_opt_in_gate(monkeypatch):
@@ -156,6 +191,31 @@ def test_meep_binary_grating_matches_modal_shape():
     )
     # 1-D gratings are not topological-charge plates; require spectral agreement.
     assert cmp["cosine"] > 0.75
+
+
+@pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")
+def test_meep_thin_plate_uses_full_2pi_encoding():
+    pytest.importorskip("meep")
+    wb = Workbench()
+    g = wb.create_grating(kind="spiral_phase", ell=1)
+    result = wb.simulate_fullwave(
+        g,
+        backend="meep",
+        L_max=4,
+        grid_size=32,
+        extent=3.5,
+        resolution=16,
+        layout="thin_plate_3d",
+        pml=1.0,
+        sz=6.0,
+        until=40,
+        w0=1.0,
+        use_cache=False,
+    )
+    assert result.extras.get("encoding") == "full_2pi"
+    assert result.extras.get("phase_depth_rad") == pytest.approx(2.0 * np.pi, rel=0.05)
+    # Charge recovery at affordable res is still a negative (ℓ ≠ +1). Encoding
+    # is the 2π map; source-imprint remains the validated FDTD charge path.
 
 
 @pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")

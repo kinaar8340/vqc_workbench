@@ -105,6 +105,24 @@ class WorkbenchConfig:
         return str(_deep_get(self.raw, "export", "device", default="generic_512"))
 
     @property
+    def fullwave_cache_dir(self) -> Path | None:
+        """Directory for FullWaveResult npz files. Empty / false disables disk."""
+        import os
+
+        env = os.environ.get("VQC_FULLWAVE_CACHE")
+        if env is not None and env.lower() in {"0", "false", "no", "off"}:
+            return None
+        if env and env.lower() not in {"1", "true", "yes", "on"}:
+            return Path(env).expanduser()
+        raw = _deep_get(self.raw, "fullwave", "cache_dir", default="outputs/fullwave_cache")
+        if raw in {None, False, "", 0}:
+            return None
+        path = Path(str(raw)).expanduser()
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        return path
+
+    @property
     def default_material(self) -> str:
         return str(_deep_get(self.raw, "materials", "default", default="fused_silica"))
 
