@@ -10,6 +10,10 @@ Synopsys OptoCompiler. The fast path is a thin-element modal engine. A
 scalar-diffraction full-wave lite is always on; Meep / RCWA backends fail
 loudly until those solvers are installed.
 
+Workbench **imports** the kinaar8340 stack (`oam_flux`, `vqc_demo`,
+`flux_trajectoid`, …). Those packages must never import this one.
+`vqc_proto/src/photonics.py` is not imported (import-time side effects).
+
 ## First 10 minutes
 
 From the repo root (with the package on `PYTHONPATH` or `pip install -e .`):
@@ -27,9 +31,10 @@ does not round-trip until you compensate with a matched filter:
 PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
 PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
-# optional FDTD (conda env vqc-meep, pymeep 1.34):
-# VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
 PYTHONPATH=src python3 -m vqc_workbench.cli inverse --kind trajectoid --target-ell -6
+PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
+PYTHONPATH=src python3 -m vqc_workbench.cli hitl --payload Hi --kind spiral_phase --channel projector
+PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind trajectoid --live --payload-hash vqc
 ```
 
 `status` lists neighboring checkouts under `~/Projects`. `simulate` prints the
@@ -37,8 +42,19 @@ OAM spectrum (including **expected ℓ** from the structure parameters).
 `run-vqc` on `identity` should recover `Hi` at fidelity 1.0.
 
 A trajectoid with 8 trenches and winding 2 piles onto ℓ = −6
-(`winding − n_trenches`). Walkthrough with the dashboard screenshot:
+(`winding − n_trenches`). Walkthrough:
 [docs/trajectoid.md](docs/trajectoid.md).
+
+Optional FDTD (conda env `vqc-meep`, pymeep 1.34), gated on `VQC_MEEP_RUN=1`:
+
+```bash
+# VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
+# VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py all
+```
+
+Validated Meep **source-imprint** cells: trajectoid ℓ = −6 (res 16→32) and
+spiral ℓ = +1. Dielectric slab (`thin_plate_3d`) is not yet charge-correct.
+See [docs/meep_validation.md](docs/meep_validation.md).
 
 ## Install
 
@@ -53,7 +69,9 @@ Optional neighbours (never required):
 ```bash
 pip install -e ../flux_hopf_lib
 pip install -e ../oam_flux
-# vqc_proto, flux_trajectoid, hfb, vqc_demo — discovered if importable
+pip install -e ../vqc_demo
+pip install -e ../flux_trajectoid
+# vqc_proto, hfb — discovered if importable
 ```
 
 ## Quick start
@@ -72,6 +90,11 @@ print(result.fidelity, result.recovered_payload)
 
 braille = wb.create_orbital_braille(n_orbs=4)
 wb.export_slm(braille, "outputs/slm_phase.npy")
+
+# live ecosystem adapters (skip if the package is missing)
+wb.couple_to_lattice(grating, kappa=0.85, steps=8, ell=3)
+wb.hitl("Hi", grating, channel="projector")
+live = wb.create_trajectoid(payload_hash="vqc", winding=2, live=True)
 ```
 
 CLI:
@@ -80,6 +103,8 @@ CLI:
 vqc-workbench status
 vqc-workbench simulate --kind spiral_phase --ell 3
 vqc-workbench run-vqc --kind identity --payload Hi
+vqc-workbench couple --kind spiral_phase --ell 3
+vqc-workbench hitl --payload Hi --channel projector
 vqc-workbench dashboard
 ```
 
@@ -115,12 +140,15 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 |-------|--------|
 | 0 Inventory + scaffolding + Structure → modes API | **this tree** |
 | 1 Analytical gratings / metasurfaces + dashboard | **this tree** |
-| 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep/RCWA still opt-in) |
-| 3 Inverse design, live oam_flux lattice, hardware-in-the-loop | **this tree** |
+| 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint for trajectoid/spiral; RCWA still opt-in) |
+| 3 Inverse design, oam_flux lattice, HITL, live generate_shell | **this tree** |
+
+Phase 2 still open: Meep on gratings / forked holograms / meta-atoms, a
+higher-res dielectric slab, RCWA layer stacks, disk cache. Details:
+[docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License
 
 MIT for the workbench integration layer. Optional VQC extras
 (`vqc_proto`, `vqc_sims_public`) remain CC-BY-NC-SA-4.0 with patent
 restrictions (US Prov. 63/913,110). See [IP_NOTICE.md](IP_NOTICE.md).
-
