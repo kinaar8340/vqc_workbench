@@ -80,6 +80,7 @@ vqc-workbench run-vqc --kind identity --payload Hi
 vqc-workbench run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 vqc-workbench compare --kind binary_grating --backends modal,scalar
 vqc-workbench export-slm --kind orbital_braille --out outputs/slm
+vqc-workbench inverse --kind trajectoid --target-ell -6
 vqc-workbench dashboard --port 8501
 ```
 

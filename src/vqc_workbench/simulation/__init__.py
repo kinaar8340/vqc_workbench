@@ -8,6 +8,7 @@ from vqc_workbench.simulation.fullwave import (
 )
 from vqc_workbench.simulation.metrics import PipelineResult, oam_purity
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult, PropagationResult
+from vqc_workbench.simulation.inverse import InverseDesigner, InverseResult
 from vqc_workbench.simulation.pipeline import VQCPipeline
 
 __all__ = [
@@ -22,4 +23,6 @@ __all__ = [
     "FullWaveUnavailable",
     "compare_spectra",
     "compare_many",
+    "InverseDesigner",
+    "InverseResult",
 ]

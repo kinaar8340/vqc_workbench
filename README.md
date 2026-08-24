@@ -29,6 +29,7 @@ PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --back
 PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
 # optional FDTD (conda env vqc-meep, pymeep 1.34):
 # VQC_MEEP_RUN=1 PYTHONPATH=src python examples/compare_trajectoid_backends.py
+PYTHONPATH=src python3 -m vqc_workbench.cli inverse --kind trajectoid --target-ell -6
 ```
 
 `status` lists neighboring checkouts under `~/Projects`. `simulate` prints the
@@ -96,6 +97,8 @@ vqc-workbench dashboard
 - Full-wave interface (`FullWaveResult` + structure-hash cache): `scalar`
   angular-spectrum always available; `meep` / `rcwa` fail loudly if missing.
 - Matched-filter / cascade helper so a known mode shifter can recover payload.
+- Inverse design: search structure parameters for a target ℓ or VQC fidelity
+  ([docs/inverse.md](docs/inverse.md)).
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 [docs/adding_a_structure.md](docs/adding_a_structure.md), and

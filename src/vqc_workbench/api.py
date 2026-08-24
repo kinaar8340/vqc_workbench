@@ -14,6 +14,7 @@ from vqc_workbench.export.hologram import export_hologram_stack
 from vqc_workbench.export.slm import export_slm
 from vqc_workbench.simulation.compare import compare_many, compare_spectra
 from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
+from vqc_workbench.simulation.inverse import InverseDesigner, InverseResult
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
 from vqc_workbench.simulation.pipeline import VQCPipeline
@@ -132,6 +133,39 @@ class Workbench:
 
     def run_vqc(self, structure: Structure, payload: Any, **kwargs: Any) -> PipelineResult:
         return self.pipeline.run(structure, payload, **kwargs)
+
+    def inverse_design(
+        self,
+        kind: str,
+        *,
+        objective: str = "charge",
+        target_ell: int | None = None,
+        payload: bytes | str = b"Hi",
+        compensate: bool = False,
+        param_names: list[str] | None = None,
+        seed_params: dict[str, Any] | None = None,
+        L_max: int | None = None,
+        grid_size: int | None = None,
+        max_evals: int = 256,
+    ) -> InverseResult:
+        """Search structure parameters for a target charge or VQC fidelity."""
+        if isinstance(payload, str):
+            payload = payload.encode("utf-8")
+        designer = InverseDesigner(
+            self,
+            L_max=int(L_max or self.config.L_max),
+            grid_size=int(grid_size or min(self.config.grid_size, 64)),
+            max_evals=int(max_evals),
+        )
+        return designer.optimize(
+            kind,
+            objective=objective,  # type: ignore[arg-type]
+            target_ell=target_ell,
+            payload=payload,
+            compensate=compensate,
+            param_names=param_names,
+            seed_params=seed_params,
+        )
 
     def export_slm(
         self,

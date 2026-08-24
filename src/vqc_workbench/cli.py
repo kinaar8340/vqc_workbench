@@ -50,6 +50,15 @@ def main(argv: list[str] | None = None) -> int:
     p_cmp.add_argument("--L-max", dest="L_max", type=int, default=8)
     p_cmp.add_argument("--figure", type=Path, default=None, help="optional PNG path")
 
+    p_inv = sub.add_parser("inverse", help="inverse-design structure parameters")
+    p_inv.add_argument("--kind", default="trajectoid")
+    p_inv.add_argument("--objective", choices=["charge", "forecast", "fidelity"], default="charge")
+    p_inv.add_argument("--target-ell", type=int, default=-6)
+    p_inv.add_argument("--payload", default="Hi")
+    p_inv.add_argument("--compensate", action="store_true")
+    p_inv.add_argument("--L-max", dest="L_max", type=int, default=8)
+    p_inv.add_argument("--max-evals", type=int, default=256)
+
     sub.add_parser("status", help="ecosystem probe")
 
     args = parser.parse_args(argv)
@@ -141,6 +150,19 @@ def main(argv: list[str] | None = None) -> int:
                 title=f"{structure.kind}  expected ℓ = {fc.expected_ell}",
             )
             print(f"wrote {args.figure}")
+        return 0
+
+    if args.cmd == "inverse":
+        result = wb.inverse_design(
+            args.kind,
+            objective=args.objective,
+            target_ell=None if args.objective == "fidelity" else args.target_ell,
+            payload=args.payload,
+            compensate=args.compensate,
+            L_max=args.L_max,
+            max_evals=args.max_evals,
+        )
+        print(json.dumps(result.as_dict(), indent=2, default=str))
         return 0
 
     if args.cmd == "export-slm":

@@ -34,12 +34,12 @@
 - RCWA layer-stack mapping (grcwa / nannos) instead of the scalar stand-in
 - Disk cache under `outputs/fullwave_cache/` wired through config
 
-## Phase 3 — unified workbench
+## Phase 3 — in progress
 
-- Inverse-design loop (alignment / string_optimizer scoring)
-- Live `oam_flux` lattice coupling (gauge torque, κ/ℓ sweeps)
+- Inverse-design loop (modal inner loop; charge / forecast / fidelity objectives)
+- Live `oam_flux` lattice coupling (gauge torque, κ/ℓ sweeps) — next
+- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy — next
 - Live `flux_trajectoid.generate_shell` instead of analytic trenches
-- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy → camera decode
 - Keep qga theorems out of the physical hypotheses (docs-only)
 
 ## Non-goals

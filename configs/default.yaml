@@ -3,7 +3,7 @@
 
 workbench:
   name: vqc_workbench
-  version: 0.2.0
+  version: 0.3.0
   backend: modal          # modal | meep | rcwa
   seed: 42
 
