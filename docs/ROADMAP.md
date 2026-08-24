@@ -45,7 +45,7 @@
 
 - Inverse-design loop (modal inner loop; charge / forecast / fidelity objectives)
 - Live `oam_flux` lattice coupling (deposit + κ sweep + OAM back-action)
-- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy
+- Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy → optional camera round-trip
 - Live `flux_trajectoid.generate_shell` trenches (`live=True`); analytic Jacobi–Anger default
 
 ## Phase 3 remaining

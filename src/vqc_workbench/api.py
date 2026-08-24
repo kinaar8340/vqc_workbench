@@ -223,8 +223,10 @@ class Workbench:
         capture: str | Path | None = None,
         n_orbs: int = 4,
         grid_size: int | None = None,
+        write_proxy: bool | None = None,
+        stitch: bool = False,
     ) -> HITLResult:
-        """SLM playlist plus vqc_demo projector-proxy loopback (or a capture decode)."""
+        """SLM playlist, projector TX package, and decode (loopback, files, or camera capture)."""
         return run_hitl(
             payload,
             structure,
@@ -237,6 +239,8 @@ class Workbench:
             n_orbs=n_orbs,
             wavelength_nm=self.config.wavelength_nm,
             grid_size=grid_size,
+            write_proxy=write_proxy,
+            stitch=stitch,
         )
 
     def export_slm(

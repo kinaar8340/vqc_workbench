@@ -60,6 +60,8 @@ class HITLResult:
     device: str
     bit_errors: int
     bits_compared: int
+    proxy_dir: str | None = None
+    video_path: str | None = None
     disclaimer: str = DISCLAIMER
     report: dict[str, Any] = field(default_factory=dict)
 
@@ -77,6 +79,8 @@ class HITLResult:
             "device": self.device,
             "bit_errors": self.bit_errors,
             "bits_compared": self.bits_compared,
+            "proxy_dir": self.proxy_dir,
+            "video_path": self.video_path,
             "disclaimer": self.disclaimer,
             "report": self.report,
         }
@@ -95,7 +99,11 @@ class HITLResult:
                 f"playlist  {self.slm_frames} frames  {self.device}"
                 + (f"  → {self.playlist_dir}" if self.playlist_dir else "")
             ),
-            f"proxy    {self.n_proxy_frames} intensity frames",
+            (
+                f"proxy    {self.n_proxy_frames} intensity frames"
+                + (f"  → {self.proxy_dir}" if self.proxy_dir else "")
+            ),
+            *([f"video    {self.video_path}"] if self.video_path else []),
             self.disclaimer,
         ]
         return "\n".join(lines)
@@ -206,8 +214,10 @@ def run_hitl(
     n_orbs: int = 4,
     wavelength_nm: float = 1550.0,
     grid_size: int | None = None,
+    write_proxy: bool | None = None,
+    stitch: bool = False,
 ) -> HITLResult:
-    """Build an SLM playlist and play the payload through the projector proxy."""
+    """SLM playlist, projector TX package, and decode (loopback, files, or capture)."""
     import importlib
 
     _load_vqc_demo()
@@ -236,33 +246,75 @@ def run_hitl(
         extra = {"playlist_kind": "payload_hologram", "slm_meta": slm_meta}
 
     playlist_dir = None
-    if out is not None:
-        playlist_dir = str(write_playlist(stack, Path(out) / "playlist", cfg=slm_cfg, extra=extra))
+    proxy_dir = None
+    video_path = None
+    out_path = Path(out) if out is not None else None
+    if write_proxy is None:
+        write_proxy = out_path is not None
+    if out_path is not None:
+        playlist_dir = str(write_playlist(stack, out_path / "playlist", cfg=slm_cfg, extra=extra))
 
     pipeline = importlib.import_module("vqc_demo.pipeline")
     projector = importlib.import_module("vqc_demo.projector")
     ch_mod = importlib.import_module("vqc_demo.channel")
+    frames_mod = importlib.import_module("vqc_demo.frames")
 
     profile = projector.VPL_HW20A if full else projector.TEST_PROFILE
+    apply = channel not in {"", "clean", "none"}
+    model = ch_mod.get_preset(channel) if apply else None
     report: dict[str, Any] = {}
     recovered = b""
     crc_ok = False
     n_proxy = 0
     symbols: list[int] = []
+    channel_name = "capture" if capture is not None else (channel if apply else "clean")
+
+    if write_proxy and out_path is not None:
+        try:
+            encoded = pipeline.encode_to_dir(
+                data, out_path / "proxy", profile=profile, stitch=False
+            )
+            proxy_dir = str(encoded.frames_dir)
+            if stitch:
+                try:
+                    video = importlib.import_module("vqc_demo.video")
+                    video_path = str(
+                        video.stitch_pngs(
+                            encoded.frames_dir, Path(encoded.out_dir) / "vqc_poc.mp4", profile
+                        )
+                    )
+                except Exception as exc:
+                    report["stitch_error"] = str(exc)
+        except Exception as exc:
+            report["proxy_error"] = str(exc)
+
     if capture is not None:
-        channel_name = "capture"
         try:
             decoded = pipeline.decode_path(capture, profile=profile, expected=data)
             recovered = bytes(decoded.payload or b"")
             crc_ok = bool(decoded.crc_ok)
-            report = dict((decoded.meta or {}).get("report") or {})
+            report.update(dict((decoded.meta or {}).get("report") or {}))
             symbols = list(decoded.symbols or [])
         except (ValueError, OSError) as exc:
-            report = {"error": str(exc)}
+            report["error"] = str(exc)
+    elif proxy_dir is not None:
+        decode_root = Path(proxy_dir)
+        if apply and model is not None:
+            frames, _man = pipeline.build_frames(data, profile=profile)
+            frames = [model.apply(f) for f in frames]
+            rx = Path(proxy_dir).parent / "rx_frames"
+            frames_mod.write_sequence(rx, frames)
+            decode_root = rx
+            report["rx_frames"] = str(rx)
+        try:
+            decoded = pipeline.decode_path(decode_root, profile=profile, expected=data)
+            recovered = bytes(decoded.payload or b"")
+            crc_ok = bool(decoded.crc_ok)
+            report.update(dict((decoded.meta or {}).get("report") or {}))
+            symbols = list(decoded.symbols or [])
+        except (ValueError, OSError) as exc:
+            report["error"] = str(exc)
     else:
-        apply = channel not in {"", "clean", "none"}
-        model = ch_mod.get_preset(channel) if apply else None
-        channel_name = channel if apply else "clean"
         try:
             decoded = pipeline.loopback(
                 data,
@@ -272,10 +324,10 @@ def run_hitl(
             )
             recovered = bytes(decoded.payload or b"")
             crc_ok = bool(decoded.crc_ok)
-            report = dict((decoded.meta or {}).get("report") or {})
+            report.update(dict((decoded.meta or {}).get("report") or {}))
             symbols = list(decoded.symbols or [])
         except ValueError as exc:
-            report = {"error": str(exc)}
+            report["error"] = str(exc)
 
     n_proxy = int(report.get("n_frames", 0) or len(symbols) * int(profile.hold_frames))
     match = recovered == data
@@ -294,5 +346,7 @@ def run_hitl(
         device=slm_cfg.name,
         bit_errors=bit_errors,
         bits_compared=bits_compared,
+        proxy_dir=proxy_dir,
+        video_path=video_path,
         report=report,
     )

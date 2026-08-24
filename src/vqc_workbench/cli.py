@@ -105,6 +105,11 @@ def main(argv: list[str] | None = None) -> int:
         help="use 1920×1080 VPL-HW20A profile (default is the fast 320×180 loopback)",
     )
     p_hitl.add_argument("--capture", type=Path, default=None, help="decode an existing MP4 or PNG dir")
+    p_hitl.add_argument(
+        "--stitch",
+        action="store_true",
+        help="if --out is set, stitch proxy frames to MP4 (needs ffmpeg)",
+    )
     p_hitl.add_argument("--json", action="store_true", help="print full result JSON")
 
     p_inv = sub.add_parser("inverse", help="inverse-design structure parameters")
@@ -264,6 +269,7 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
             full=args.full,
             capture=args.capture,
+            stitch=args.stitch,
         )
         if args.json:
             print(json.dumps(result.as_dict(), indent=2, default=str))

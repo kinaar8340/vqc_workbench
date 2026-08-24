@@ -85,6 +85,23 @@ def test_hitl_clean_loopback_matches_payload(tmp_path: Path):
     assert result.playlist_dir is not None
     assert Path(result.playlist_dir).joinpath("phase_stack.npy").is_file()
     assert result.bit_errors == 0
+    assert result.proxy_dir is not None
+    assert Path(result.proxy_dir).is_dir()
+    assert any(Path(result.proxy_dir).glob("frame_*.png"))
+
+
+def test_hitl_camera_roundtrip_from_written_frames(tmp_path: Path):
+    wb = Workbench()
+    try:
+        tx = wb.hitl("Hi", channel="clean", n_frames=2, out=tmp_path / "cam", grid_size=32)
+    except HITLUnavailable:
+        pytest.skip("vqc_demo not importable")
+    assert tx.payload_match
+    frames = Path(tx.proxy_dir)
+    roundtrip = wb.hitl("Hi", capture=frames, n_frames=2, out=None)
+    assert roundtrip.channel == "capture"
+    assert roundtrip.payload_match
+    assert roundtrip.recovered == b"Hi"
 
 
 def test_cli_hitl_default_is_summary(capsys, tmp_path: Path):
