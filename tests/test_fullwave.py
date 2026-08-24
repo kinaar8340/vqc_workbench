@@ -65,10 +65,10 @@ def test_meep_opt_in_gate(monkeypatch):
         wb.simulate_fullwave(g, backend="meep", L_max=4, grid_size=32)
 
 
-@pytest.mark.skipif(
-    os.environ.get("VQC_MEEP_RUN", "").lower() not in {"1", "true", "yes"},
-    reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check",
-)
+_MEEP = os.environ.get("VQC_MEEP_RUN", "").lower() in {"1", "true", "yes"}
+
+
+@pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")
 def test_meep_spiral_agrees_with_modal():
     pytest.importorskip("meep")
     wb = Workbench()
@@ -78,6 +78,44 @@ def test_meep_spiral_agrees_with_modal():
     )
     assert cmp["backend_b"] == "meep"
     assert cmp["dominant_ell_b"] == 1
+
+
+@pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")
+def test_meep_metasurface_ell1_agrees_with_modal():
+    pytest.importorskip("meep")
+    wb = Workbench()
+    m = wb.create_metasurface(ell_target=1)
+    cmp = wb.compare_backends(
+        m, backends=("modal", "meep"), L_max=4, grid_size=24, extent=3.0, resolution=10
+    )
+    assert cmp["dominant_ell_a"] == 1
+    assert cmp["dominant_ell_b"] == 1
+    assert cmp["cosine"] > 0.9
+
+
+@pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")
+def test_meep_binary_grating_matches_modal_shape():
+    pytest.importorskip("meep")
+    wb = Workbench()
+    g = wb.create_grating(kind="binary_grating", period=0.4, duty=0.5)
+    cmp = wb.compare_backends(
+        g, backends=("modal", "meep"), L_max=4, grid_size=24, extent=3.0, resolution=10
+    )
+    # 1-D gratings are not topological-charge plates; require spectral agreement.
+    assert cmp["cosine"] > 0.75
+
+
+@pytest.mark.skipif(not _MEEP, reason="set VQC_MEEP_RUN=1 to run the Meep FDTD agreement check")
+def test_meep_forked_hologram_matches_modal_shape():
+    pytest.importorskip("meep")
+    wb = Workbench()
+    g = wb.create_grating(kind="forked_hologram", ell=1, period=0.35)
+    cmp = wb.compare_backends(
+        g, backends=("modal", "meep"), L_max=4, grid_size=24, extent=3.0, resolution=10
+    )
+    # Linear carrier spreads near-field OAM; Meep should still track the modal projector.
+    assert cmp["dominant_match"]
+    assert cmp["cosine"] > 0.65
 
 
 def test_compare_many_modal_scalar():

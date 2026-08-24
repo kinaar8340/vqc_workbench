@@ -4,7 +4,10 @@
     conda activate vqc-meep
     VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py all
 
-Subcommands: sweep | spiral | slab | all
+Subcommands: sweep | spiral | slab | cells | slab-hires | all
+
+    cells      — source-imprint binary / blazed / forked / metasurface
+    slab-hires — thin_plate_3d spiral at higher res (default --resolutions 20,24,32)
 """
 
 from __future__ import annotations
@@ -240,9 +243,183 @@ def cmd_slab(wb: Workbench) -> dict:
     return out
 
 
+def _cheap_imprint() -> dict:
+    return dict(L_max=4, grid_size=32, extent=3.5, resolution=12, layout="source_imprint")
+
+
+def cmd_cells(wb: Workbench) -> dict:
+    """Source-imprint gallery past the canonical trajectoid / spiral cells."""
+    print("\n=== source-imprint cells: binary, blazed, forked, metasurface ===")
+    imprint = _cheap_imprint()
+    specs = [
+        (
+            "binary_grating",
+            wb.create_grating(kind="binary_grating", period=0.4, duty=0.5),
+            "binary grating  period=0.4  —  source-imprint",
+            dict(imprint),
+        ),
+        (
+            "blazed_grating",
+            wb.create_grating(kind="blazed_grating", period=0.5),
+            "blazed grating  period=0.5  —  source-imprint",
+            dict(imprint),
+        ),
+        (
+            "forked_hologram",
+            wb.create_grating(kind="forked_hologram", ell=1, period=0.35),
+            "forked hologram  ell=+1  —  source-imprint",
+            dict(imprint),
+        ),
+        (
+            "metasurface",
+            wb.create_metasurface(ell_target=1),
+            "metasurface  ell_target=+1  —  source-imprint",
+            dict(imprint),
+        ),
+    ]
+    out: dict = {}
+    for name, structure, title, meep_kw in specs:
+        print(f"\n=== {name} ===")
+        expected = wb.forecast_charge(structure).expected_ell
+        payload = _triple(
+            wb,
+            structure,
+            expected=expected,
+            fig_name=f"{name}_backend_spectra.png",
+            title=title,
+            meep_kw=meep_kw,
+        )
+        payload["kind"] = name
+        payload["formula"] = wb.forecast_charge(structure).formula
+        payload["params"] = dict(structure.params)
+        out[name] = payload
+    _write_json(_fig_dir() / "meep_cells.json", out)
+    return out
+
+
+def cmd_slab_hires(wb: Workbench, resolutions: list[int]) -> dict:
+    """Dielectric-slab spiral at higher res than the documented negative."""
+    print("\n=== thin_plate_3d higher-res spiral (extent=3.5, sz=6) ===")
+    plate = wb.create_grating(kind="spiral_phase", ell=1)
+    modal = wb.simulate_fullwave(plate, backend="modal", L_max=4, grid_size=32, extent=3.5)
+    rows = []
+    for res in resolutions:
+        print(f"\n=== spiral thin_plate_3d res={res} ===")
+        try:
+            meep = wb.simulate_fullwave(
+                plate,
+                backend="meep",
+                L_max=4,
+                grid_size=32,
+                extent=3.5,
+                resolution=res,
+                layout="thin_plate_3d",
+                pml=1.0,
+                sz=6.0,
+                until=40,
+                slab_thickness=0.5,
+            )
+        except FullWaveUnavailable as exc:
+            rows.append({"resolution": res, "error": str(exc)})
+            print(f"  FAILED {exc}")
+            continue
+        vs = compare_spectra(modal, meep)
+        row = {
+            "resolution": res,
+            "layout": "thin_plate_3d",
+            "dominant_ell": int(meep.dominant_ell()),
+            "expectation_ell": float(meep.expectation_ell()),
+            "purity": _purity(meep),
+            "cosine_vs_modal": vs["cosine"],
+            "dominant_match": vs["dominant_match"],
+            "extras": _jsonable(meep.extras),
+        }
+        rows.append(row)
+        print(
+            f"  ℓ={row['dominant_ell']:+d}  P={row['purity']:.3f}  "
+            f"cosine={row['cosine_vs_modal']:.3f}  match={row['dominant_match']}"
+        )
+        fig_path = _fig_dir() / f"spiral_thin_plate_res{res}.png"
+        plot_backend_spectra(
+            [modal, meep],
+            expected_ell=1,
+            path=str(fig_path),
+            title=f"spiral ell=+1  thin_plate_3d  res={res}",
+        )
+        print(f"wrote {fig_path}")
+        row["figure"] = str(fig_path)
+
+    # One centered-index slab: n = 1.5 + 0.4 φ/π so negative phase is not vacuum.
+    print("\n=== spiral thin_plate_3d res=16  slab_n0=1.5 (centered index) ===")
+    try:
+        meep_n0 = wb.simulate_fullwave(
+            plate,
+            backend="meep",
+            L_max=4,
+            grid_size=32,
+            extent=3.5,
+            resolution=16,
+            layout="thin_plate_3d",
+            pml=1.0,
+            sz=6.0,
+            until=40,
+            slab_thickness=0.5,
+            slab_n0=1.5,
+            slab_dn=0.4,
+        )
+        vs_n0 = compare_spectra(modal, meep_n0)
+        centered = {
+            "resolution": 16,
+            "layout": "thin_plate_3d",
+            "slab_n0": 1.5,
+            "slab_dn": 0.4,
+            "dominant_ell": int(meep_n0.dominant_ell()),
+            "expectation_ell": float(meep_n0.expectation_ell()),
+            "purity": _purity(meep_n0),
+            "cosine_vs_modal": vs_n0["cosine"],
+            "dominant_match": vs_n0["dominant_match"],
+            "extras": _jsonable(meep_n0.extras),
+        }
+        print(
+            f"  ℓ={centered['dominant_ell']:+d}  P={centered['purity']:.3f}  "
+            f"cosine={centered['cosine_vs_modal']:.3f}  match={centered['dominant_match']}"
+        )
+        fig_n0 = _fig_dir() / "spiral_thin_plate_res16_n0.png"
+        plot_backend_spectra(
+            [modal, meep_n0],
+            expected_ell=1,
+            path=str(fig_n0),
+            title="spiral ell=+1  thin_plate_3d  res=16  n0=1.5",
+        )
+        centered["figure"] = str(fig_n0)
+    except FullWaveUnavailable as exc:
+        centered = {"resolution": 16, "slab_n0": 1.5, "error": str(exc)}
+        print(f"  FAILED {exc}")
+
+    payload = {
+        "expected_ell": 1,
+        "cell": {"extent": 3.5, "sz": 6.0, "pml": 1.0, "slab_thickness": 0.5},
+        "note": (
+            "Higher-res slab attempt. Previous negative: spiral res=12 extent=5 "
+            "peaked at ℓ=−4, cosine 0.151. Charge-correct source-imprint is still "
+            "the validated FDTD path unless a row here matches ℓ=+1."
+        ),
+        "modal": _summary(modal),
+        "sweep": rows,
+        "centered_index": centered,
+    }
+    _write_json(_fig_dir() / "thin_plate_3d_hires.json", payload)
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Meep validation suite")
-    parser.add_argument("cmd", nargs="?", default="all", choices=["sweep", "spiral", "slab", "all"])
+    parser.add_argument(
+        "cmd",
+        nargs="?",
+        default="all",
+        choices=["sweep", "spiral", "slab", "cells", "slab-hires", "all"],
+    )
     parser.add_argument("--resolutions", default="20,24,32", help="comma-separated Meep resolutions")
     args = parser.parse_args()
     resolutions = [int(x) for x in args.resolutions.split(",") if x.strip()]
@@ -253,6 +430,10 @@ def main() -> int:
         cmd_spiral(wb)
     if args.cmd in {"slab", "all"}:
         cmd_slab(wb)
+    if args.cmd in {"cells", "all"}:
+        cmd_cells(wb)
+    if args.cmd == "slab-hires":
+        cmd_slab_hires(wb, resolutions)
     return 0
 
 

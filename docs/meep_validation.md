@@ -53,7 +53,53 @@ here it does **not** recover the topological charge.
 
 That is an honest negative: a 0.5-thick slab at these pixel counts cannot
 hold the helical phase. Source-imprint remains the validated FDTD path.
-Raising slab resolution into the 32–48 range (with this cell) is the next
-Meep-only experiment, not a Phase 3 item.
 
 JSON: [`figures/thin_plate_3d.json`](figures/thin_plate_3d.json).
+
+## 4. Source-imprint gallery (binary, blazed, forked, metasurface)
+
+Same layout as the spiral plate (`res=12`, extent 3.5, 84×84×43 pixels).
+Charge plates should peak on the forecast ℓ; 1-D gratings should only
+agree in *shape* with the modal projector (⟨ℓ⟩ ≈ 0, no topological charge).
+
+```bash
+VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py cells
+```
+
+| Cell | Expected ℓ | modal ℓ | Meep ℓ | cosine vs modal | Notes |
+|------|------------|---------|--------|-----------------|-------|
+| binary grating period=0.4 | 0 | −3 | +3 | 0.883 | No charge; peak sign is noise, ⟨ℓ⟩ ≈ 0 |
+| blazed grating period=0.5 | 0 | −4 | −4 | 0.951 | Peak match; ⟨ℓ⟩ still ~0 on modal |
+| forked hologram ell=+1 | +1 | −4 | −4 | 0.751 | Linear carrier spreads near-field OAM (demodulate to recover ℓ) |
+| metasurface ell_target=+1 | +1 | +1 | +1 | 0.999 | Same as the spiral plate (purity 0.907) |
+
+The metasurface helical-bias cell is a second charge-correct source-imprint
+confirmation. Forked holograms agree on the *projector* spectrum, not the
+forecast ℓ — same near-field caveat as the modal engine.
+
+Figures: [`binary_grating_backend_spectra.png`](figures/binary_grating_backend_spectra.png),
+[`blazed_grating_backend_spectra.png`](figures/blazed_grating_backend_spectra.png),
+[`forked_hologram_backend_spectra.png`](figures/forked_hologram_backend_spectra.png),
+[`metasurface_backend_spectra.png`](figures/metasurface_backend_spectra.png).
+JSON: [`figures/meep_cells.json`](figures/meep_cells.json).
+
+## 5. Higher-res dielectric slab (still a negative)
+
+Smaller cell than §3 (extent 3.5, sz=6, pml=1.0) so res can go up.
+
+| Cell | res | n(φ) | Meep ℓ | cosine vs modal |
+|------|-----|------|--------|-----------------|
+| spiral ell=+1 | 16 | 1 + clip (legacy) | −4 | 0.113 |
+| spiral ell=+1 | 20 | 1 + clip | −4 | 0.096 |
+| spiral ell=+1 | 16 | n0=1.5 ± 0.4 φ/π | −4 | 0.098 |
+
+Raising resolution made cosine **worse**, not better. Centering the index
+so negative phase is not vacuum also failed at res=16. Source-imprint is
+still the validated FDTD path. `layout=thin_plate_3d` accepts `slab_n0`
+and `slab_dn` for later encoding experiments.
+
+```bash
+VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py slab-hires --resolutions 16,20
+```
+
+JSON: [`figures/thin_plate_3d_hires.json`](figures/thin_plate_3d_hires.json).

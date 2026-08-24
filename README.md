@@ -52,8 +52,10 @@ Optional FDTD (conda env `vqc-meep`, pymeep 1.34), gated on `VQC_MEEP_RUN=1`:
 # VQC_MEEP_RUN=1 PYTHONPATH=src python examples/meep_validation.py all
 ```
 
-Validated Meep **source-imprint** cells: trajectoid ℓ = −6 (res 16→32) and
-spiral ℓ = +1. Dielectric slab (`thin_plate_3d`) is not yet charge-correct.
+Validated Meep **source-imprint** cells: trajectoid ℓ = −6 (res 16→32),
+spiral ℓ = +1, and metasurface `ell_target=+1`. Binary / blazed / forked
+agree with the modal projector in spectral shape. Dielectric slab
+(`thin_plate_3d`) is not yet charge-correct (still ℓ = −4 at res 16–20).
 See [docs/meep_validation.md](docs/meep_validation.md).
 
 ## Install

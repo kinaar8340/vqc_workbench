@@ -28,9 +28,15 @@
 - Spiral plate ℓ = +1 Meep confirmation (purity 0.907, cosine 0.999)
 - Dielectric slab (`thin_plate_3d`) documented as not yet charge-correct at affordable res
 
+## Done (Phase 2 Meep gallery)
+
+- Source-imprint FDTD for binary / blazed / forked / metasurface (`examples/meep_validation.py cells`)
+- Metasurface `ell_target=+1` matches spiral (Meep ℓ=+1, cosine 0.999)
+- Higher-res `thin_plate_3d` spiral (res 16, 20) still charge-wrong (ℓ=−4)
+
 ## Phase 2 remaining
 
-- Real Meep 2-D/3-D runs for gratings and meta-atoms (`VQC_MEEP_RUN=1`)
+- Dielectric slab (`thin_plate_3d`) that recovers helical charge
 - RCWA layer-stack mapping (grcwa / nannos) instead of the scalar stand-in
 - Disk cache under `outputs/fullwave_cache/` wired through config
 

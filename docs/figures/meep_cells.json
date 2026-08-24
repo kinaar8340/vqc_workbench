@@ -1,0 +1,394 @@
+{
+  "binary_grating": {
+    "expected_ell": 0,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": -3,
+        "expectation_ell": -4.4408201635108063e-16,
+        "purity": 0.2950543232299741,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 4
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": -1,
+        "expectation_ell": -4.440892098499756e-16,
+        "purity": 0.31064121176807036,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 4,
+          "grid_size": 32
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": 3,
+        "expectation_ell": 0.006511019121866135,
+        "purity": 0.2513604387828271,
+        "extras": {
+          "layout": "source_imprint",
+          "resolution": 12,
+          "cell_size": {
+            "sx": 7.0,
+            "sy": 7.0,
+            "sz": 3.5833333333333335
+          },
+          "n_pixels": {
+            "nx": 84,
+            "ny": 84,
+            "nz": 43
+          },
+          "grid_size": 32,
+          "extent": 3.5,
+          "pml": 0.5,
+          "z_src": -0.7,
+          "z_mon": 0.7,
+          "kind": "binary_grating",
+          "meep_version": "1.34.0",
+          "until": 20.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.653118711694233,
+        "dominant_match": false,
+        "dominant_ell_a": -3,
+        "dominant_ell_b": -1
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.882691103813009,
+        "dominant_match": false,
+        "dominant_ell_a": -3,
+        "dominant_ell_b": 3
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.38606823479049535,
+        "dominant_match": false,
+        "dominant_ell_a": -1,
+        "dominant_ell_b": 3
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.882691103813009,
+      "dominant_match": false,
+      "dominant_ell_a": -3,
+      "dominant_ell_b": 3
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/binary_grating_backend_spectra.png",
+    "kind": "binary_grating",
+    "formula": "\u2113 = 0 (no topological charge)",
+    "params": {
+      "period": 0.4,
+      "duty": 0.5,
+      "depth_rad": 3.141592653589793,
+      "angle_deg": 0.0
+    }
+  },
+  "blazed_grating": {
+    "expected_ell": 0,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": -4,
+        "expectation_ell": -5.654321455494937e-11,
+        "purity": 0.47783336598961434,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 4
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": 4,
+        "expectation_ell": 2.5900614986085202e-11,
+        "purity": 0.48743375487699725,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 4,
+          "grid_size": 32
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": -4,
+        "expectation_ell": -0.8157052344199882,
+        "purity": 0.3576737305029763,
+        "extras": {
+          "layout": "source_imprint",
+          "resolution": 12,
+          "cell_size": {
+            "sx": 7.0,
+            "sy": 7.0,
+            "sz": 3.5833333333333335
+          },
+          "n_pixels": {
+            "nx": 84,
+            "ny": 84,
+            "nz": 43
+          },
+          "grid_size": 32,
+          "extent": 3.5,
+          "pml": 0.5,
+          "z_src": -0.7,
+          "z_mon": 0.7,
+          "kind": "blazed_grating",
+          "meep_version": "1.34.0",
+          "until": 20.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.9999476901095835,
+        "dominant_match": false,
+        "dominant_ell_a": -4,
+        "dominant_ell_b": 4
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.9511619274931107,
+        "dominant_match": true,
+        "dominant_ell_a": -4,
+        "dominant_ell_b": -4
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.9490214010931419,
+        "dominant_match": false,
+        "dominant_ell_a": 4,
+        "dominant_ell_b": -4
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.9511619274931107,
+      "dominant_match": true,
+      "dominant_ell_a": -4,
+      "dominant_ell_b": -4
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/blazed_grating_backend_spectra.png",
+    "kind": "blazed_grating",
+    "formula": "\u2113 = 0 (no topological charge)",
+    "params": {
+      "period": 0.5,
+      "depth_rad": 6.283185307179586,
+      "angle_deg": 0.0
+    }
+  },
+  "forked_hologram": {
+    "expected_ell": 1,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": -4,
+        "expectation_ell": -3.8390162305850164,
+        "purity": 0.8136196113591395,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 4
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": -4,
+        "expectation_ell": -3.0529630345678815,
+        "purity": 0.5348787748508181,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 4,
+          "grid_size": 32
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": -4,
+        "expectation_ell": -0.9320753756161643,
+        "purity": 0.21764150536966992,
+        "extras": {
+          "layout": "source_imprint",
+          "resolution": 12,
+          "cell_size": {
+            "sx": 7.0,
+            "sy": 7.0,
+            "sz": 3.5833333333333335
+          },
+          "n_pixels": {
+            "nx": 84,
+            "ny": 84,
+            "nz": 43
+          },
+          "grid_size": 32,
+          "extent": 3.5,
+          "pml": 0.5,
+          "z_src": -0.7,
+          "z_mon": 0.7,
+          "kind": "forked_hologram",
+          "meep_version": "1.34.0",
+          "until": 20.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.9842505952978872,
+        "dominant_match": true,
+        "dominant_ell_a": -4,
+        "dominant_ell_b": -4
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.7505545971531498,
+        "dominant_match": true,
+        "dominant_ell_a": -4,
+        "dominant_ell_b": -4
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.7860929209878956,
+        "dominant_match": true,
+        "dominant_ell_a": -4,
+        "dominant_ell_b": -4
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.7505545971531498,
+      "dominant_match": true,
+      "dominant_ell_a": -4,
+      "dominant_ell_b": -4
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/forked_hologram_backend_spectra.png",
+    "kind": "forked_hologram",
+    "formula": "\u2113 = ell = +1",
+    "params": {
+      "ell": 1,
+      "period": 0.35,
+      "angle_deg": 0.0
+    }
+  },
+  "metasurface": {
+    "expected_ell": 1,
+    "backends": [
+      {
+        "backend": "modal",
+        "dominant_ell": 1,
+        "expectation_ell": 0.9999869883746808,
+        "purity": 0.9999934942085031,
+        "extras": {
+          "wavelength_nm": 1550.0,
+          "L_max": 4
+        }
+      },
+      {
+        "backend": "scalar",
+        "dominant_ell": 1,
+        "expectation_ell": 0.9999966234128208,
+        "purity": 0.9999983117078355,
+        "extras": {
+          "z": 0.0,
+          "wavelength_nm": 1550.0,
+          "L_max": 4,
+          "grid_size": 32
+        }
+      },
+      {
+        "backend": "meep",
+        "dominant_ell": 1,
+        "expectation_ell": 1.0369690720252598,
+        "purity": 0.9071699345741087,
+        "extras": {
+          "layout": "source_imprint",
+          "resolution": 12,
+          "cell_size": {
+            "sx": 7.0,
+            "sy": 7.0,
+            "sz": 3.5833333333333335
+          },
+          "n_pixels": {
+            "nx": 84,
+            "ny": 84,
+            "nz": 43
+          },
+          "grid_size": 32,
+          "extent": 3.5,
+          "pml": 0.5,
+          "z_src": -0.7,
+          "z_mon": 0.7,
+          "kind": "metasurface",
+          "meep_version": "1.34.0",
+          "until": 20.0
+        }
+      }
+    ],
+    "pairwise": [
+      {
+        "a": "modal",
+        "b": "scalar",
+        "cosine": 0.9999999999970989,
+        "dominant_match": true,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": 1
+      },
+      {
+        "a": "modal",
+        "b": "meep",
+        "cosine": 0.9989850913480622,
+        "dominant_match": true,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": 1
+      },
+      {
+        "a": "scalar",
+        "b": "meep",
+        "cosine": 0.9989850886493511,
+        "dominant_match": true,
+        "dominant_ell_a": 1,
+        "dominant_ell_b": 1
+      }
+    ],
+    "meep_vs_modal": {
+      "a": "modal",
+      "b": "meep",
+      "cosine": 0.9989850913480622,
+      "dominant_match": true,
+      "dominant_ell_a": 1,
+      "dominant_ell_b": 1
+    },
+    "unavailable": {},
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/metasurface_backend_spectra.png",
+    "kind": "metasurface",
+    "formula": "\u2113 = ell_target = +1",
+    "params": {
+      "ell_target": 1,
+      "fill_factor": 1.0
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "expected_ell": 1,
+  "cell": {
+    "extent": 3.5,
+    "sz": 6.0,
+    "pml": 1.0,
+    "slab_thickness": 0.5
+  },
+  "note": "Higher-res slab attempt. Previous negative: spiral res=12 extent=5 peaked at \u2113=\u22124, cosine 0.151. Charge-correct source-imprint is still the validated FDTD path unless a row here matches \u2113=+1.",
+  "modal": {
+    "backend": "modal",
+    "dominant_ell": 1,
+    "expectation_ell": 0.9999869883746808,
+    "purity": 0.9999934942085031,
+    "extras": {
+      "wavelength_nm": 1550.0,
+      "L_max": 4
+    }
+  },
+  "sweep": [
+    {
+      "resolution": 16,
+      "layout": "thin_plate_3d",
+      "dominant_ell": -4,
+      "expectation_ell": -0.380356089039795,
+      "purity": 0.27138182661002974,
+      "cosine_vs_modal": 0.11348611219509072,
+      "dominant_match": false,
+      "extras": {
+        "layout": "thin_plate_3d",
+        "resolution": 16,
+        "cell_size": {
+          "sx": 7.0,
+          "sy": 7.0,
+          "sz": 6.0
+        },
+        "n_pixels": {
+          "nx": 112,
+          "ny": 112,
+          "nz": 96
+        },
+        "grid_size": 32,
+        "extent": 3.5,
+        "pml": 1.0,
+        "z_src": -1.8,
+        "z_mon": 1.8,
+        "kind": "spiral_phase",
+        "meep_version": "1.34.0",
+        "slab_thickness": 0.5,
+        "until": 40.0
+      },
+      "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/spiral_thin_plate_res16.png"
+    },
+    {
+      "resolution": 20,
+      "layout": "thin_plate_3d",
+      "dominant_ell": -4,
+      "expectation_ell": -0.9268112756470459,
+      "purity": 0.31114964239730863,
+      "cosine_vs_modal": 0.09567162761811271,
+      "dominant_match": false,
+      "extras": {
+        "layout": "thin_plate_3d",
+        "resolution": 20,
+        "cell_size": {
+          "sx": 7.0,
+          "sy": 7.0,
+          "sz": 6.0
+        },
+        "n_pixels": {
+          "nx": 140,
+          "ny": 140,
+          "nz": 120
+        },
+        "grid_size": 32,
+        "extent": 3.5,
+        "pml": 1.0,
+        "z_src": -1.8,
+        "z_mon": 1.8,
+        "kind": "spiral_phase",
+        "meep_version": "1.34.0",
+        "slab_thickness": 0.5,
+        "until": 40.0
+      },
+      "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/spiral_thin_plate_res20.png"
+    }
+  ],
+  "centered_index": {
+    "resolution": 16,
+    "layout": "thin_plate_3d",
+    "slab_n0": 1.5,
+    "slab_dn": 0.4,
+    "dominant_ell": -4,
+    "expectation_ell": -0.9467334611534383,
+    "purity": 0.28656418691839236,
+    "cosine_vs_modal": 0.09777098124711452,
+    "dominant_match": false,
+    "extras": {
+      "layout": "thin_plate_3d",
+      "resolution": 16,
+      "cell_size": {
+        "sx": 7.0,
+        "sy": 7.0,
+        "sz": 6.0
+      },
+      "n_pixels": {
+        "nx": 112,
+        "ny": 112,
+        "nz": 96
+      },
+      "grid_size": 32,
+      "extent": 3.5,
+      "pml": 1.0,
+      "z_src": -1.8,
+      "z_mon": 1.8,
+      "kind": "spiral_phase",
+      "meep_version": "1.34.0",
+      "slab_thickness": 0.5,
+      "until": 40.0,
+      "slab_n0": 1.5,
+      "slab_dn": 0.4
+    },
+    "figure": "/home/kinaar/Projects/vqc_workbench/docs/figures/spiral_thin_plate_res16_n0.png"
+  }
+}

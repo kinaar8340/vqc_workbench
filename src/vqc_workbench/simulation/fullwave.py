@@ -388,8 +388,16 @@ class MeepBackend(FullWaveBackend):
         # Thin phase plate in 3-D: Δn · d = φ λ / 2π  (λ = 1 Meep unit).
         d = float(kwargs.get("slab_thickness", 0.5))
         lam = 1.0
-        delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
-        n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
+        n0 = float(kwargs.get("slab_n0", 1.0))
+        dn_amp = float(kwargs.get("slab_dn", 0.4))
+        if n0 > 1.0:
+            # Centered index so both signs of φ survive. The legacy n=1+clip
+            # path maps negative phase onto vacuum and kills the helix.
+            n_map = n0 + dn_amp * (np.angle(mask) / np.pi)
+            n_map = np.clip(n_map, 1.01, 2.8)
+        else:
+            delta_n = np.angle(mask) * lam / (2.0 * np.pi * d)
+            n_map = np.clip(1.0 + delta_n, 1.0, 2.8)
         eps = n_map**2
         eps_min = float(np.min(eps))
         eps_max = float(np.max(eps))
@@ -466,7 +474,12 @@ class MeepBackend(FullWaveBackend):
                 z_mon=z_mon,
                 kind=structure.kind,
                 meep_version=getattr(mp, "__version__", None),
-                extra={"slab_thickness": d, "until": until},
+                extra={
+                    "slab_thickness": d,
+                    "until": until,
+                    "slab_n0": n0,
+                    "slab_dn": dn_amp if n0 > 1.0 else None,
+                },
             ),
         )
 
