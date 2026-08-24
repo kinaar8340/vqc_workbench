@@ -70,6 +70,7 @@ class Workbench:
         return self.create_structure("orbital_braille", **params)
 
     def create_trajectoid(self, payload_hash: str | None = None, **params: Any) -> Structure:
+        """Analytic Jacobi–Anger trenches, or ``live=True`` for generate_shell."""
         if payload_hash is not None:
             params["payload_hash"] = payload_hash
         return self.create_structure("trajectoid", **params)

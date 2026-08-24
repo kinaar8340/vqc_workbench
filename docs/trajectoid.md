@@ -51,6 +51,36 @@ flags a match when the measured peak agrees.
 PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind trajectoid --n-trenches 8 --winding 2
 ```
 
+## Live `generate_shell`
+
+The analytic cosine trench is the default so inverse design, Meep
+validation, and `ℓ = w − n` stay exact. When
+[flux_trajectoid](https://github.com/kinaar8340/flux_trajectoid) is
+importable, `live=True` replaces that cosine with a real rolling-path
+shell (`generate_shell`: path scaling, TPT closure, arc-length trench,
+optional 3-D mesh). The helical carrier `exp(i w φ)` is unchanged.
+
+```python
+wb = Workbench()
+analytic = wb.create_trajectoid(n_trenches=8, winding=2)
+live = wb.create_trajectoid(n_trenches=8, winding=2, payload_hash="vqc", live=True)
+print(live.to_geometry_dict()["shell"])   # kx, ky, mismatch_deg, fingerprint
+```
+
+```bash
+PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind trajectoid --live --payload-hash vqc
+PYTHONPATH=src python examples/run_live_trajectoid.py
+```
+
+Live shells have **no closed-form charge** — `forecast_charge` reports
+`expected_ell=None` and says so. Missing `flux_trajectoid` raises
+`TrajectoidLiveUnavailable`. `n_trenches` becomes the Fourier-harmonic
+count of the rolling path; `build_3d=True` turns on the shaved-sphere
+mesh (slower; default is the planar plan).
+
+On the dashboard a **live generate_shell** toggle appears for kind
+`trajectoid` when the package is discovered.
+
 ## Payload recovery
 
 Because this is a shifter, `run_vqc` through the raw shell will not round-trip

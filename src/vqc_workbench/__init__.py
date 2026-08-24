@@ -8,6 +8,7 @@ from vqc_workbench.core.structure import ParametricCell, Structure
 from vqc_workbench.simulation.fullwave import FullWaveResult, FullWaveUnavailable
 from vqc_workbench.simulation.inverse import InverseResult
 from vqc_workbench.simulation.hitl import HITLResult, HITLUnavailable
+from vqc_workbench.structures.trajectoid import TrajectoidLiveUnavailable
 from vqc_workbench.simulation.lattice import LatticeCouplingResult, LatticeUnavailable
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult, PropagationResult
@@ -31,5 +32,6 @@ __all__ = [
     "LatticeUnavailable",
     "HITLResult",
     "HITLUnavailable",
+    "TrajectoidLiveUnavailable",
     "__version__",
 ]

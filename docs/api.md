@@ -15,6 +15,7 @@ g = wb.create_grating(kind="binary_grating", period=0.4, duty=0.5)
 g = wb.create_grating(kind="forked_hologram", ell=2, period=0.35)
 b = wb.create_orbital_braille(n_orbs=4, duties=[0.25, 0.5, 0.75, 0.4])
 t = wb.create_trajectoid(payload_hash="vqc", winding=2)
+t = wb.create_trajectoid(payload_hash="vqc", winding=2, live=True)  # flux_trajectoid.generate_shell
 m = wb.create_metasurface(ell_target=1)
 f = wb.create_flux_lattice(ell=3, n_sites=8, kappa=0.85)
 i = wb.create_structure("identity")
@@ -77,6 +78,7 @@ Presets: `generic_512`, `holoeye_pluto_2`, `meadowlark_512`, `thorlabs_1080p`.
 ```bash
 vqc-workbench status
 vqc-workbench simulate --kind spiral_phase --ell 3
+vqc-workbench simulate --kind trajectoid --n-trenches 8 --winding 2 --live
 vqc-workbench run-vqc --kind identity --payload Hi
 vqc-workbench run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 vqc-workbench compare --kind binary_grating --backends modal,scalar

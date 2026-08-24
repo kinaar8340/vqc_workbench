@@ -41,7 +41,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
 | oam_flux | lattice coupling, vectorized photonics | optional |
 | vqc_proto | Orbital Braille typehead, SLM playlist | optional (local geometry) |
 | vqc_demo | Projector proxy + SLM hologram package | optional (HITL) |
-| flux_trajectoid | 3-D rolling shells | optional (analytic trenches) |
+| flux_trajectoid | 3-D rolling shells | optional (`live=True` generate_shell; analytic trenches otherwise) |
 | hfb | vortex-ring SLM / analog gravity | optional |
 | qga | geometric design rules (docs / later) | optional |
 | Meep / RCWA | full-wave validation | optional extras |
@@ -99,7 +99,7 @@ can show the arithmetic next to the measured peak:
 | Kind | Formula |
 |------|---------|
 | `spiral_phase` | `ell` |
-| `trajectoid` | `winding − n_trenches` (Jacobi–Anger k = −1 branch) |
+| `trajectoid` | `winding − n_trenches` (Jacobi–Anger k = −1; analytic cell). Live `generate_shell` has no closed-form ℓ. |
 | `forked_hologram` | `ell` (after demodulating the linear carrier) |
 | `identity` / 1-D gratings | `0` |
 

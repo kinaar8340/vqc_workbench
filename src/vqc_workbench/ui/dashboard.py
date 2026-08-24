@@ -66,6 +66,14 @@ def _app() -> None:
                 params[field["name"]] = st.slider(
                     field["name"], float(field["min"]), float(field["max"]), float(field["default"])
                 )
+        if kind == "trajectoid":
+            params["live"] = st.toggle(
+                "live generate_shell",
+                value=False,
+                help="Replace analytic cosine trenches with flux_trajectoid.generate_shell. "
+                "Jacobi–Anger ℓ = w − n applies only to the analytic cell.",
+                disabled=not eco.flux_trajectoid,
+            )
         L_max = st.slider("L_max", 2, 16, int(wb.config.L_max))
         live_turb = st.toggle("Live turbulence on spectrum", value=False)
         turb = st.slider("turbulence", 0.0, 2.0, 0.0, 0.05, help="Used by VQC runs always; also by the spectrum when live turbulence is on.")

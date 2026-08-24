@@ -83,6 +83,11 @@ def import_vqc_demo():
     return _import_from_projects("vqc_demo", "vqc_demo", "src")
 
 
+def import_flux_trajectoid():
+    """Import flux_trajectoid, adding ~/Projects/flux_trajectoid/src if needed."""
+    return _import_from_projects("flux_trajectoid", "flux_trajectoid", "src")
+
+
 def probe_ecosystem() -> EcosystemStatus:
     home = Path.home() / "Projects"
     env_proto = os.environ.get("VQC_PROTO_PATH")
@@ -120,5 +125,9 @@ def probe_ecosystem() -> EcosystemStatus:
         status.notes["meep"] = "optional FDTD backend not installed; use backend='scalar'"
     if not status.grcwa:
         status.notes["grcwa"] = "optional RCWA backend not installed; use backend='scalar'"
+    if status.flux_trajectoid:
+        status.notes["flux_trajectoid"] = "live generate_shell available (create_trajectoid(live=True))"
+    else:
+        status.notes["flux_trajectoid"] = "optional; analytic trench fallback in use"
     status.notes["scalar"] = "angular-spectrum full-wave lite is always available"
     return status

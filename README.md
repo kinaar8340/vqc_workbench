@@ -102,6 +102,8 @@ vqc-workbench dashboard
 - Live `oam_flux` lattice coupling ([docs/lattice.md](docs/lattice.md)).
 - Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy
   ([docs/hitl.md](docs/hitl.md)).
+- Live `flux_trajectoid.generate_shell` trenches (`create_trajectoid(live=True)`);
+  analytic Jacobi–Anger cell remains the default.
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 [docs/adding_a_structure.md](docs/adding_a_structure.md), and

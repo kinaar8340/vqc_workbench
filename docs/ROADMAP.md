@@ -34,12 +34,15 @@
 - RCWA layer-stack mapping (grcwa / nannos) instead of the scalar stand-in
 - Disk cache under `outputs/fullwave_cache/` wired through config
 
-## Phase 3 — in progress
+## Done (Phase 3)
 
 - Inverse-design loop (modal inner loop; charge / forecast / fidelity objectives)
 - Live `oam_flux` lattice coupling (deposit + κ sweep + OAM back-action)
 - Hardware-in-the-loop: SLM playlist → vqc_demo projector proxy
-- Live `flux_trajectoid.generate_shell` instead of analytic trenches
+- Live `flux_trajectoid.generate_shell` trenches (`live=True`); analytic Jacobi–Anger default
+
+## Phase 3 remaining
+
 - Keep qga theorems out of the physical hypotheses (docs-only)
 
 ## Non-goals

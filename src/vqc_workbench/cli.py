@@ -16,6 +16,12 @@ def main(argv: list[str] | None = None) -> int:
     p_sim.add_argument("--ell", type=int, default=3)
     p_sim.add_argument("--n-trenches", type=int, default=8)
     p_sim.add_argument("--winding", type=int, default=2)
+    p_sim.add_argument(
+        "--live",
+        action="store_true",
+        help="trajectoid: use flux_trajectoid.generate_shell instead of analytic trenches",
+    )
+    p_sim.add_argument("--payload-hash", default=None, help="trajectoid payload identity")
     p_sim.add_argument("--L-max", dest="L_max", type=int, default=None)
     p_sim.add_argument("--yaml", type=Path, default=None)
     p_sim.add_argument("--turbulence", type=float, default=0.0)
@@ -31,6 +37,13 @@ def main(argv: list[str] | None = None) -> int:
         help="apply a matched filter after the structure (inverse shifter)",
     )
     p_vqc.add_argument("--ell", type=int, default=3)
+    p_vqc.add_argument(
+        "--live",
+        action="store_true",
+        help="trajectoid: use flux_trajectoid.generate_shell instead of analytic trenches",
+    )
+    p_vqc.add_argument("--n-trenches", type=int, default=8)
+    p_vqc.add_argument("--winding", type=int, default=2)
 
     p_slm = sub.add_parser("export-slm", help="write SLM phase + levels")
     p_slm.add_argument("--kind", default="spiral_phase")
@@ -49,6 +62,11 @@ def main(argv: list[str] | None = None) -> int:
     p_cmp.add_argument("--backends", default="modal,scalar")
     p_cmp.add_argument("--L-max", dest="L_max", type=int, default=8)
     p_cmp.add_argument("--figure", type=Path, default=None, help="optional PNG path")
+    p_cmp.add_argument(
+        "--live",
+        action="store_true",
+        help="trajectoid: use flux_trajectoid.generate_shell instead of analytic trenches",
+    )
 
     p_c = sub.add_parser("couple", help="couple OAM into an oam_flux Hopf lattice")
     p_c.add_argument("--kind", default="spiral_phase")
@@ -124,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.kind == "trajectoid":
                 kwargs["n_trenches"] = args.n_trenches
                 kwargs["winding"] = args.winding
+                kwargs["live"] = bool(args.live)
+                if args.payload_hash:
+                    kwargs["payload_hash"] = args.payload_hash
             structure = wb.create_structure(args.kind, **kwargs)
         forecast = wb.forecast_charge(structure)
         modes = wb.simulate_modes(structure, L_max=args.L_max, turbulence=args.turbulence)
@@ -143,6 +164,11 @@ def main(argv: list[str] | None = None) -> int:
         kwargs = {}
         if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"}:
             kwargs["ell"] = args.ell
+        if args.kind == "trajectoid":
+            kwargs["n_trenches"] = args.n_trenches
+            kwargs["winding"] = args.winding
+            kwargs["live"] = bool(args.live)
+            kwargs["payload_hash"] = args.payload
         structure = wb.create_structure(args.kind, **kwargs)
         result = wb.run_vqc(
             structure,
@@ -161,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.kind == "trajectoid":
             kwargs["n_trenches"] = args.n_trenches
             kwargs["winding"] = args.winding
+            kwargs["live"] = bool(getattr(args, "live", False))
         structure = wb.create_structure(args.kind, **kwargs)
         names = tuple(p.strip() for p in args.backends.split(",") if p.strip())
         if len(names) < 2:

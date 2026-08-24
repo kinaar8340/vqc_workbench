@@ -48,6 +48,14 @@ def forecast_charge(structure: Structure) -> ChargeForecast:
     if kind == "trajectoid":
         n = int(p.get("n_trenches", 8))
         winding = int(p.get("winding", 2))
+        if p.get("live"):
+            return ChargeForecast(
+                None,
+                f"live generate_shell trench + helical carrier w = {winding:+d}",
+                True,
+                "Jacobi–Anger ℓ = winding − n_trenches is the analytic cell only. "
+                "Live flux_trajectoid shells have no closed-form charge.",
+            )
         ell = winding - n
         return ChargeForecast(
             ell,
