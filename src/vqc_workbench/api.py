@@ -15,6 +15,7 @@ from vqc_workbench.export.slm import export_slm
 from vqc_workbench.simulation.compare import compare_many, compare_spectra
 from vqc_workbench.simulation.fullwave import FullWaveEngine, FullWaveResult
 from vqc_workbench.simulation.inverse import InverseDesigner, InverseResult
+from vqc_workbench.simulation.lattice import LatticeCouplingResult, couple_modes_to_lattice
 from vqc_workbench.simulation.metrics import PipelineResult
 from vqc_workbench.simulation.modal import ModalSimulator, ModeResult
 from vqc_workbench.simulation.pipeline import VQCPipeline
@@ -133,6 +134,43 @@ class Workbench:
 
     def run_vqc(self, structure: Structure, payload: Any, **kwargs: Any) -> PipelineResult:
         return self.pipeline.run(structure, payload, **kwargs)
+
+    def couple_to_lattice(
+        self,
+        source: Structure | ModeResult,
+        *,
+        kappa: float = 0.85,
+        steps: int = 8,
+        ell: int | None = None,
+        nx: int = 12,
+        kick_strength: float = 0.08,
+        flywheel_sites: int = 4,
+        sweep_kappa: list[float] | tuple[float, ...] | None = None,
+        L_max: int | None = None,
+        grid_size: int | None = None,
+    ) -> LatticeCouplingResult:
+        """Deposit OAM flux from a structure or mode snapshot onto a Hopf lattice."""
+        if isinstance(source, ModeResult):
+            modes = source
+        else:
+            modes = self.simulate_modes(
+                source,
+                L_max=L_max or self.config.L_max,
+                grid_size=grid_size or min(self.config.grid_size, 64),
+            )
+        return couple_modes_to_lattice(
+            modes,
+            self.modal,
+            kappa=kappa,
+            steps=steps,
+            ell=ell,
+            nx=nx,
+            kick_strength=kick_strength,
+            flywheel_sites=flywheel_sites,
+            sweep_kappa=list(sweep_kappa) if sweep_kappa is not None else None,
+            w0=self.config.w0,
+            wavelength_nm=self.config.wavelength_nm,
+        )
 
     def inverse_design(
         self,

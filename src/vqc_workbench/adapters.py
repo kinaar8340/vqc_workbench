@@ -57,6 +57,22 @@ def _checkout(home: Path, *rel: str) -> bool:
     return (home.joinpath(*rel)).exists()
 
 
+def import_oam_flux():
+    """Import oam_flux, adding ~/Projects/oam_flux/src if needed. Raises ImportError."""
+    try:
+        return importlib.import_module("oam_flux")
+    except ImportError:
+        src = Path.home() / "Projects" / "oam_flux" / "src"
+        if src.is_dir():
+            import sys
+
+            path = str(src)
+            if path not in sys.path:
+                sys.path.insert(0, path)
+            return importlib.import_module("oam_flux")
+        raise
+
+
 def probe_ecosystem() -> EcosystemStatus:
     home = Path.home() / "Projects"
     env_proto = os.environ.get("VQC_PROTO_PATH")

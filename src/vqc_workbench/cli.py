@@ -50,6 +50,18 @@ def main(argv: list[str] | None = None) -> int:
     p_cmp.add_argument("--L-max", dest="L_max", type=int, default=8)
     p_cmp.add_argument("--figure", type=Path, default=None, help="optional PNG path")
 
+    p_c = sub.add_parser("couple", help="couple OAM into an oam_flux Hopf lattice")
+    p_c.add_argument("--kind", default="spiral_phase")
+    p_c.add_argument("--ell", type=int, default=None)
+    p_c.add_argument("--n-trenches", type=int, default=8)
+    p_c.add_argument("--winding", type=int, default=2)
+    p_c.add_argument("--kappa", type=float, default=0.85)
+    p_c.add_argument("--steps", type=int, default=8)
+    p_c.add_argument("--nx", type=int, default=12)
+    p_c.add_argument("--kick", type=float, default=0.08)
+    p_c.add_argument("--sweep-kappa", default=None, help="comma-separated κ list")
+    p_c.add_argument("--L-max", dest="L_max", type=int, default=8)
+
     p_inv = sub.add_parser("inverse", help="inverse-design structure parameters")
     p_inv.add_argument("--kind", default="trajectoid")
     p_inv.add_argument("--objective", choices=["charge", "forecast", "fidelity"], default="charge")
@@ -150,6 +162,30 @@ def main(argv: list[str] | None = None) -> int:
                 title=f"{structure.kind}  expected ℓ = {fc.expected_ell}",
             )
             print(f"wrote {args.figure}")
+        return 0
+
+    if args.cmd == "couple":
+        kwargs: dict = {}
+        if args.kind in {"spiral_phase", "forked_hologram", "flux_lattice"} and args.ell is not None:
+            kwargs["ell"] = args.ell
+        if args.kind == "trajectoid":
+            kwargs["n_trenches"] = args.n_trenches
+            kwargs["winding"] = args.winding
+        structure = wb.create_structure(args.kind, **kwargs)
+        sweep = None
+        if args.sweep_kappa:
+            sweep = [float(x) for x in args.sweep_kappa.split(",") if x.strip()]
+        result = wb.couple_to_lattice(
+            structure,
+            kappa=args.kappa,
+            steps=args.steps,
+            ell=args.ell,
+            nx=args.nx,
+            kick_strength=args.kick,
+            sweep_kappa=sweep,
+            L_max=args.L_max,
+        )
+        print(json.dumps(result.as_dict(), indent=2, default=str))
         return 0
 
     if args.cmd == "inverse":

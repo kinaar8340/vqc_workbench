@@ -99,6 +99,7 @@ vqc-workbench dashboard
 - Matched-filter / cascade helper so a known mode shifter can recover payload.
 - Inverse design: search structure parameters for a target ℓ or VQC fidelity
   ([docs/inverse.md](docs/inverse.md)).
+- Live `oam_flux` lattice coupling ([docs/lattice.md](docs/lattice.md)).
 
 See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 [docs/adding_a_structure.md](docs/adding_a_structure.md), and
