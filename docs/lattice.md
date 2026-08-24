@@ -39,7 +39,11 @@ sweep = wb.couple_to_lattice(plate, steps=4, sweep_kappa=[0.80, 0.85, 0.89])
 ```bash
 PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
 PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind trajectoid --sweep-kappa 0.80,0.85,0.89 --steps 4
+PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --json
 ```
+
+Default CLI is a one-screen summary (`⟨θ⟩`, κ_eff, Δℓ, residual, OAM before/after,
+pump vs recovery). Pass `--json` for the full per-step history dump.
 
 The inner loop is modal (fast). Use a small `nx` (8–16) for interactive
 sweeps; oam_flux defaults to 24 in its own demos.

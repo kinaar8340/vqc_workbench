@@ -61,6 +61,11 @@ def main(argv: list[str] | None = None) -> int:
     p_c.add_argument("--kick", type=float, default=0.08)
     p_c.add_argument("--sweep-kappa", default=None, help="comma-separated κ list")
     p_c.add_argument("--L-max", dest="L_max", type=int, default=8)
+    p_c.add_argument(
+        "--json",
+        action="store_true",
+        help="print full result JSON including per-step history",
+    )
 
     p_inv = sub.add_parser("inverse", help="inverse-design structure parameters")
     p_inv.add_argument("--kind", default="trajectoid")
@@ -185,7 +190,10 @@ def main(argv: list[str] | None = None) -> int:
             sweep_kappa=sweep,
             L_max=args.L_max,
         )
-        print(json.dumps(result.as_dict(), indent=2, default=str))
+        if args.json:
+            print(json.dumps(result.as_dict(), indent=2, default=str))
+        else:
+            print(result.summary())
         return 0
 
     if args.cmd == "inverse":

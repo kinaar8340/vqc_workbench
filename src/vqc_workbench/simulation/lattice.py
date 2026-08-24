@@ -67,6 +67,54 @@ class LatticeCouplingResult:
             "sweep": self.sweep,
         }
 
+    def summary(self) -> str:
+        """One-screen readout; full history stays on ``as_dict`` / ``--json``."""
+        lines = [
+            f"ℓ={self.ell}  κ={self.kappa}  steps={self.steps}  nx={self.nx}",
+            (
+                f"⟨θ⟩  {self.initial_mean_twist:.6f} → {self.final_mean_twist:.6f}"
+                f"   var={self.twist_variance:.6f}"
+            ),
+            (
+                f"κ_eff={self.coupling_factor:.6f}  Δℓ={self.ell_shift:+.6e}"
+                f"  residual={self.conservation_residual:.3e}"
+            ),
+            f"OAM  {_fmt_oam(self.oam_before)} → {_fmt_oam(self.oam_after)}",
+        ]
+        pump = _pump_line(self.history)
+        if pump:
+            lines.append(pump)
+        if self.sweep:
+            lines.append("κ      ⟨θ⟩_f     var       κ_eff     Δℓ          residual")
+            for row in self.sweep:
+                lines.append(
+                    f"{row['kappa']:.2f}   {row['final_mean_twist']:.6f}  "
+                    f"{row['twist_variance']:.6f}  {row['coupling_factor']:.6f}  "
+                    f"{row['ell_shift']:+.6e}  {row['conservation_residual']:.3e}"
+                )
+        return "\n".join(lines)
+
+
+def _fmt_oam(d: dict[int, float], thresh: float = 1e-6) -> str:
+    items = sorted(((int(k), v) for k, v in d.items() if v > thresh), key=lambda kv: -kv[1])
+    parts = []
+    for k, v in items:
+        parts.append(f"{k}:{v:.4f}" if v >= 0.01 else f"{k}:{v:.3e}")
+    return "{" + ", ".join(parts) + "}"
+
+
+def _pump_line(history: list[dict[str, float]]) -> str:
+    if not history:
+        return ""
+    n_pump = sum(1 for h in history if float(h.get("pump_active", 0.0)) > 0.5)
+    n_rec = sum(1 for h in history if float(h.get("recovery_active", 0.0)) > 0.5)
+    p0 = float(history[0].get("photon_momentum", 0.0))
+    p1 = float(history[-1].get("photon_momentum", 0.0))
+    return (
+        f"pump {n_pump} step{'s' if n_pump != 1 else ''}, "
+        f"p {p0:.3f} → {p1:.3f}; recovery {n_rec}"
+    )
+
 
 def _oam_dict(ells: NDArray, intensity: NDArray) -> dict[int, float]:
     return {int(e): float(i) for e, i in zip(ells, intensity)}

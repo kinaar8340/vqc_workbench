@@ -32,6 +32,79 @@ def test_couple_spiral_to_lattice():
     assert result.history[0]["photon_momentum"] > 0.0
 
 
+def test_coupling_result_summary_is_compact():
+    from vqc_workbench.simulation.lattice import LatticeCouplingResult
+
+    result = LatticeCouplingResult(
+        ell=3,
+        kappa=0.85,
+        steps=2,
+        nx=8,
+        initial_mean_twist=0.73,
+        final_mean_twist=0.72,
+        twist_variance=0.14,
+        coupling_factor=0.96,
+        ell_shift=-0.0018,
+        conservation_residual=1e-16,
+        oam_before={3: 0.999, -1: 1e-3},
+        oam_after={3: 0.997, 2: 0.002},
+        history=[
+            {"pump_active": 1.0, "recovery_active": 0.0, "photon_momentum": 0.8},
+            {"pump_active": 0.0, "recovery_active": 1.0, "photon_momentum": 0.0},
+        ],
+        sweep=[
+            {
+                "kappa": 0.80,
+                "final_mean_twist": 0.721,
+                "twist_variance": 0.14,
+                "coupling_factor": 0.96,
+                "ell_shift": -0.0018,
+                "conservation_residual": 0.0,
+            }
+        ],
+    )
+    text = result.summary()
+    assert "ℓ=3" in text
+    assert "κ_eff=" in text
+    assert "Δℓ=" in text
+    assert "OAM" in text
+    assert "pump 1 step" in text
+    assert "0.80" in text
+    assert "history" not in text
+    dumped = result.as_dict()
+    assert "history" in dumped
+    assert len(dumped["history"]) == 2
+
+
+def test_cli_couple_default_is_summary(capsys):
+    from vqc_workbench.cli import main
+    from vqc_workbench.simulation.lattice import LatticeUnavailable
+
+    try:
+        rc = main(
+            [
+                "couple",
+                "--kind",
+                "spiral_phase",
+                "--ell",
+                "3",
+                "--steps",
+                "2",
+                "--nx",
+                "8",
+                "--L-max",
+                "6",
+            ]
+        )
+    except LatticeUnavailable:
+        pytest.skip("oam_flux not importable")
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "ℓ=3" in out
+    assert "κ_eff=" in out
+    assert '"history"' not in out
+
+
 def test_kappa_sweep_two_points():
     wb = Workbench()
     plate = wb.create_grating(kind="spiral_phase", ell=1)
