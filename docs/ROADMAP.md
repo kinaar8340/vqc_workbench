@@ -33,11 +33,11 @@
 - Source-imprint FDTD for binary / blazed / forked / metasurface (`examples/meep_validation.py cells`)
 - Metasurface `ell_target=+1` matches spiral (Meep ℓ=+1, cosine 0.999)
 - Higher-res `thin_plate_3d` spiral (res 16, 20) still charge-wrong (ℓ=−4)
+- RCWA layer stack via grcwa / nannos (`FullWaveResult`, no scalar stand-in)
 
 ## Phase 2 remaining
 
 - Dielectric slab (`thin_plate_3d`) that recovers helical charge
-- RCWA layer-stack mapping (grcwa / nannos) instead of the scalar stand-in
 - Disk cache under `outputs/fullwave_cache/` wired through config
 
 ## Done (Phase 3)

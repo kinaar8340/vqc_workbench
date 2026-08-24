@@ -634,34 +634,91 @@ def _resample_complex(src: NDArray[np.complex128], shape: tuple[int, int]) -> ND
 
 
 class RCWABackend(FullWaveBackend):
-    """Periodic grating / metasurface backend. Tries ``grcwa`` then ``nannos``."""
+    """Periodic layer-stack RCWA. Tries ``grcwa`` then ``nannos``."""
 
     name = "rcwa"
 
     def run(self, structure: Structure, **kwargs: Any) -> FullWaveResult:
-        engine = None
-        engine_name = None
+        from vqc_workbench.simulation.lg import gaussian_beam
+        from vqc_workbench.simulation.rcwa import run_grcwa, run_nannos, structure_to_stack
+
+        engines: list[str] = []
         for mod in ("grcwa", "nannos"):
             try:
-                engine = __import__(mod)
-                engine_name = mod
-                break
+                __import__(mod)
+                engines.append(mod)
             except ImportError:
                 continue
-        if engine is None:
+        if not engines:
             raise FullWaveUnavailable(
                 "No RCWA engine found (tried grcwa, nannos). Use backend='scalar' "
-                "or install an RCWA package."
+                "or `pip install grcwa` / `pip install nannos`."
             )
-        # Hand the structure geometry to the engine; a full layer stack is a
-        # follow-up. For now we project the thin-element mask so the return
-        # type stays consistent, and record the live engine name.
-        scalar = ScalarDiffractionBackend()
-        result = scalar.run(structure, **kwargs)
-        result.backend = "rcwa"
-        result.extras["engine"] = engine_name
-        result.extras["note"] = "RCWA engine present; modal coefficients via scalar projector pending layer mapping"
-        return result
+        L_max = int(kwargs.get("L_max", 8))
+        wavelength_nm = float(kwargs.get("wavelength_nm", 1550.0))
+        grid_size = int(kwargs.get("grid_size", 32))
+        w0 = float(kwargs.get("w0", 1.0))
+        extent = float(kwargs.get("extent", 4.0))
+        nG = int(kwargs.get("nG", 21))
+        n_hi = float(kwargs.get("n_hi", 1.5))
+        n_lo = float(kwargs.get("n_lo", 1.0))
+        slab_thickness = kwargs.get("slab_thickness")
+        stack = structure_to_stack(
+            structure,
+            wavelength_nm=wavelength_nm,
+            grid_size=grid_size,
+            extent=extent,
+            nG=nG,
+            n_hi=n_hi,
+            n_lo=n_lo,
+            slab_thickness=None if slab_thickness is None else float(slab_thickness),
+        )
+        x, y = cartesian_grid(int(grid_size), float(extent))
+        last_err: Exception | None = None
+        field = None
+        meta: dict[str, Any] = {}
+        prefer = str(kwargs.get("engine") or engines[0])
+        order = [prefer] + [e for e in engines if e != prefer]
+        for name in order:
+            try:
+                if name == "grcwa":
+                    field, meta = run_grcwa(stack, x=x, y=y)
+                else:
+                    field, meta = run_nannos(stack, x=x, y=y)
+                break
+            except Exception as exc:
+                last_err = exc
+                continue
+        if field is None:
+            raise FullWaveUnavailable(f"RCWA layer-stack solve failed: {last_err}") from last_err
+        envelope = gaussian_beam(x, y, w0=w0)
+        transmitted = np.asarray(field, dtype=np.complex128) * envelope
+        extras = {
+            "layout": "layer_stack",
+            "wavelength_nm": wavelength_nm,
+            "L_max": L_max,
+            "grid_size": grid_size,
+            "extent": extent,
+            "period_x": stack.period_x,
+            "period_y": stack.period_y,
+            "nG": stack.nG,
+            "note": (
+                "RCWA layer stack (superstrate / patterned slab / substrate) "
+                "under planewave illumination; OAM from the reconstructed "
+                "transmitted field × Gaussian envelope."
+            ),
+        }
+        extras.update(stack.extras)
+        extras.update(meta)
+        return pack_oam_result(
+            transmitted,
+            x,
+            y,
+            L_max=L_max,
+            w0=w0,
+            backend="rcwa",
+            extras=extras,
+        )
 
 
 def get_backend(name: str, modal: ModalSimulator | None = None) -> FullWaveBackend:

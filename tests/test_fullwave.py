@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pytest
 
 from vqc_workbench.api import Workbench
@@ -22,11 +23,63 @@ def test_rcwa_fails_loudly_when_missing():
     wb = Workbench()
     g = wb.create_grating(kind="binary_grating")
     try:
-        result = wb.simulate_fullwave(g, backend="rcwa", L_max=4, grid_size=32)
-    except FullWaveUnavailable as exc:
-        assert "RCWA" in str(exc) or "grcwa" in str(exc).lower()
-        return
+        import grcwa  # noqa: F401
+    except ImportError:
+        try:
+            import nannos  # noqa: F401
+        except ImportError:
+            with pytest.raises(FullWaveUnavailable, match="RCWA|grcwa|nannos"):
+                wb.simulate_fullwave(g, backend="rcwa", L_max=4, grid_size=32)
+            return
+    result = wb.simulate_fullwave(g, backend="rcwa", L_max=4, grid_size=32, nG=9, use_cache=False)
     assert result.backend == "rcwa"
+    assert result.extras.get("layout") == "layer_stack"
+    assert "scalar projector" not in (result.extras.get("note") or "")
+
+
+def test_rcwa_binary_layer_stack_conserves_power():
+    pytest.importorskip("grcwa")
+    wb = Workbench()
+    g = wb.create_grating(kind="binary_grating", period=0.4, duty=0.5)
+    result = wb.simulate_fullwave(
+        g, backend="rcwa", L_max=4, grid_size=32, extent=3.5, nG=15, use_cache=False
+    )
+    assert result.backend == "rcwa"
+    assert result.extras["engine"] == "grcwa"
+    assert result.extras["layout"] == "layer_stack"
+    assert abs(result.extras["R_total"] + result.extras["T_total"] - 1.0) < 0.05
+    assert result.ell.shape == result.coefficients.shape
+    assert result.T is not None
+
+
+def test_rcwa_stack_builder_uses_grating_period():
+    from vqc_workbench.simulation.rcwa import structure_to_stack
+
+    wb = Workbench()
+    g = wb.create_grating(kind="binary_grating", period=0.4, duty=0.5)
+    stack = structure_to_stack(g, grid_size=16, nG=9)
+    assert stack.period_x == pytest.approx(0.4)
+    assert stack.layers[1].patterned
+    assert np.asarray(stack.layers[1].epsilon).shape == (16, 16)
+    assert stack.extras["unit_cell"] == "period"
+
+
+def test_nannos_layer_stack_optional():
+    pytest.importorskip("nannos")
+    wb = Workbench()
+    g = wb.create_grating(kind="binary_grating", period=0.4, duty=0.5)
+    result = wb.simulate_fullwave(
+        g,
+        backend="rcwa",
+        engine="nannos",
+        L_max=4,
+        grid_size=32,
+        extent=3.5,
+        nG=15,
+        use_cache=False,
+    )
+    assert result.extras["engine"] == "nannos"
+    assert abs(result.extras["R_total"] + result.extras["T_total"] - 1.0) < 0.05
 
 
 def test_scalar_vs_modal_binary_grating():

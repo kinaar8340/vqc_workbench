@@ -123,7 +123,9 @@ def probe_ecosystem() -> EcosystemStatus:
         status.notes["flux_hopf_lib"] = "optional; local quaternion fallback in use"
     if not status.meep:
         status.notes["meep"] = "optional FDTD backend not installed; use backend='scalar'"
-    if not status.grcwa:
+    if status.grcwa:
+        status.notes["grcwa"] = "live RCWA layer stack (grcwa/nannos); backend='rcwa'"
+    else:
         status.notes["grcwa"] = "optional RCWA backend not installed; use backend='scalar'"
     if status.flux_trajectoid:
         status.notes["flux_trajectoid"] = "live generate_shell available (create_trajectoid(live=True))"

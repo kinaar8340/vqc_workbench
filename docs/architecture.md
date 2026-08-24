@@ -79,6 +79,8 @@ solver produced the numbers. Results are cached by a SHA-256 of
   `z=0` it matches modal; a small `z` adds Fresnel diffraction.
 - **meep / rcwa**: opt-in. Raise `FullWaveUnavailable` until the solver is
   importable. When present they still emit `FullWaveResult`.
+  `rcwa` builds a superstrate / patterned-slab / substrate stack and solves
+  it with grcwa (or nannos). See [rcwa.md](rcwa.md).
 
 Compare with `Workbench.compare_backends(structure, ("modal", "scalar"))`.
 

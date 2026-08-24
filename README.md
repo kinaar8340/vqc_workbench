@@ -123,6 +123,8 @@ vqc-workbench dashboard
 - Streamlit editor.
 - Full-wave interface (`FullWaveResult` + structure-hash cache): `scalar`
   angular-spectrum always available; `meep` / `rcwa` fail loudly if missing.
+  `rcwa` is a real layer stack (grcwa / nannos), not a scalar stand-in
+  ([docs/rcwa.md](docs/rcwa.md)).
 - Matched-filter / cascade helper so a known mode shifter can recover payload.
 - Inverse design: search structure parameters for a target ℓ or VQC fidelity
   ([docs/inverse.md](docs/inverse.md)).
@@ -145,8 +147,7 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 | 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint for trajectoid/spiral; RCWA still opt-in) |
 | 3 Inverse design, oam_flux lattice, HITL, live generate_shell | **this tree** |
 
-Phase 2 still open: Meep on gratings / forked holograms / meta-atoms, a
-higher-res dielectric slab, RCWA layer stacks, disk cache. Details:
+Phase 2 still open: a charge-correct dielectric slab, disk cache. Details:
 [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## License

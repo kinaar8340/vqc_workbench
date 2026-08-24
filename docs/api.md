@@ -82,6 +82,7 @@ vqc-workbench simulate --kind trajectoid --n-trenches 8 --winding 2 --live
 vqc-workbench run-vqc --kind identity --payload Hi
 vqc-workbench run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 vqc-workbench compare --kind binary_grating --backends modal,scalar
+vqc-workbench compare --kind binary_grating --backends modal,rcwa
 vqc-workbench export-slm --kind orbital_braille --out outputs/slm
 vqc-workbench inverse --kind trajectoid --target-ell -6
 vqc-workbench couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
