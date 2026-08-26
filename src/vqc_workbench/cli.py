@@ -54,6 +54,12 @@ def main(argv: list[str] | None = None) -> int:
     p_ui = sub.add_parser("dashboard", help="launch Streamlit UI")
     p_ui.add_argument("--port", type=int, default=8501)
 
+    p_lad = sub.add_parser("ladder", help="photonic ladder diagram HMI")
+    p_lad.add_argument("--port", type=int, default=8502)
+    p_lad.add_argument("--yaml", type=Path, default=None, help="ladder program YAML")
+    p_lad.add_argument("--render", type=Path, default=None, help="write static HMI PNG and exit")
+    p_lad.add_argument("--json", action="store_true", help="print bound ladder summary")
+
     p_cmp = sub.add_parser("compare", help="modal vs full-wave OAM spectra")
     p_cmp.add_argument("--kind", default="binary_grating")
     p_cmp.add_argument("--ell", type=int, default=3)
@@ -135,6 +141,45 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "dashboard":
         wb.launch_dashboard(port=args.port)
+        return 0
+
+    if args.cmd == "ladder":
+        from vqc_workbench.ladder import LadderEngine, beam_evolution_ladder, load_ladder
+
+        doc = load_ladder(args.yaml) if args.yaml else beam_evolution_ladder()
+        if args.render or args.json:
+            import matplotlib
+
+            matplotlib.use("Agg")
+            engine = LadderEngine(workbench=wb, grid_size=int(doc.grid_size))
+            runtime = engine.bind(doc)
+            if args.json:
+                summary = {
+                    "title": doc.title,
+                    "version": doc.version,
+                    "selected_node_id": doc.selected_node_id,
+                    "n_rungs": len(doc.rungs),
+                    "rungs": [
+                        {
+                            "id": r.id,
+                            "title": r.title,
+                            "kind": runtime.rungs[r.id].kind,
+                            "dominant_ell": runtime.rungs[r.id].dominant_ell,
+                            "equipment": [d.tag for d in r.equipment],
+                        }
+                        for r in doc.rungs
+                    ],
+                    "spectrum": None if runtime.spectrum is None else runtime.spectrum.as_dict(),
+                    "alarm": doc.alarm,
+                }
+                print(json.dumps(summary, indent=2, default=str))
+            if args.render:
+                from vqc_workbench.ladder.render import render_ladder
+
+                render_ladder(doc, runtime, args.render)
+                print(f"wrote {args.render}")
+            return 0
+        wb.launch_ladder(port=args.port, yaml_path=args.yaml)
         return 0
 
     if args.cmd == "simulate":

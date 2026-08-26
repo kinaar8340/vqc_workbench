@@ -31,6 +31,8 @@ does not round-trip until you compensate with a matched filter:
 PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
 PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
 PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
+PYTHONPATH=src python3 -m vqc_workbench.cli ladder --render docs/figures/ladder_hmi.png
+PYTHONPATH=src python3 -m vqc_workbench.cli ladder --port 8502   # PLC-style photonic ladder HMI
 PYTHONPATH=src python3 -m vqc_workbench.cli inverse --kind trajectoid --target-ell -6
 PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
 PYTHONPATH=src python3 -m vqc_workbench.cli hitl --payload Hi --kind spiral_phase --channel projector
@@ -108,6 +110,8 @@ vqc-workbench run-vqc --kind identity --payload Hi
 vqc-workbench couple --kind spiral_phase --ell 3
 vqc-workbench hitl --payload Hi --channel projector
 vqc-workbench dashboard
+vqc-workbench ladder --render docs/figures/ladder_hmi.png
+vqc-workbench ladder
 ```
 
 ## What is in the box
@@ -120,7 +124,8 @@ vqc-workbench dashboard
 - End-to-end `run_vqc` (encode → couple through a structure → propagate →
   repetition QEC → decode).
 - SLM export (Holoeye / Meadowlark / Thorlabs presets).
-- Streamlit editor.
+- Streamlit editor plus a PLC-style photonic ladder HMI
+  ([docs/ladder.md](docs/ladder.md), `vqc-workbench ladder`).
 - Full-wave interface (`FullWaveResult` + structure-hash cache): `scalar`
   angular-spectrum always available; `meep` / `rcwa` fail loudly if missing.
   `rcwa` is a real layer stack (grcwa / nannos), not a scalar stand-in
@@ -146,6 +151,7 @@ See [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md),
 | 1 Analytical gratings / metasurfaces + dashboard | **this tree** |
 | 2 Full-wave interface, cache, scalar diffraction, matched filter | **this tree** (Meep source-imprint + charge-correct slab; RCWA layer stack) |
 | 3 Inverse design, oam_flux lattice, HITL, live generate_shell | **this tree** |
+| 4 Photonic ladder HMI (PLC / lab mapping, dual beam monitors) | **this tree** |
 
 Phase 2 remaining: none of the original interface items. Disk cache is on
 (`outputs/fullwave_cache/`). Details:

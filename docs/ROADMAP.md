@@ -52,6 +52,16 @@
 
 - Keep qga theorems out of the physical hypotheses (docs-only)
 
+## Done (Photonic ladder HMI)
+
+- PLC / SCADA layout: title bar, spectrum analyzer, stacked logic rungs
+- Dual axial + spatiotemporal beam monitors (coils) on every logic rung
+- Full-width equipment / lab mapping row directly under each rung
+- `#00FF00` single-node selection glow with trigger-to-clear
+- YAML ladder programs bound to `Workbench()` (modes, SLM, VQC, HITL)
+- Edit / save / load, cycle scan, static matplotlib HMI + Streamlit
+- Docs: [ladder.md](ladder.md), figure `docs/figures/ladder_hmi.png`
+
 ## Non-goals
 
 - Replacing Lumerical / OptoCompiler

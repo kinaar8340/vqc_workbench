@@ -47,6 +47,12 @@ print(modes.dominant_ell(), modes.coefficients)
 prop = wb.modal.propagate(modes, z_range=(0, 5), turbulence=0.2, n_z=40)
 
 result = wb.run_vqc(i, b"Hi", L_max=8, qec_reps=1, turbulence=0.0)
+
+# photonic ladder HMI (Streamlit; needs [ui])
+# wb.launch_ladder(port=8502)
+from vqc_workbench.ladder import LadderEngine, beam_evolution_ladder
+doc = beam_evolution_ladder()
+rt = LadderEngine(workbench=wb, grid_size=64).bind(doc)
 print(result.fidelity, result.ber, result.recovered_payload)
 ```
 

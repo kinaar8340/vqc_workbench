@@ -7,7 +7,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  UI / CLI / notebooks                                        │
-│  Streamlit dashboard · vqc-workbench CLI · examples/         │
+│  Streamlit dashboard · photonic ladder HMI · CLI · examples/ │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -111,3 +111,11 @@ can show the arithmetic next to the measured peak:
 
 `configs/default.yaml` is the single source of truth for `L_max`, λ, grid,
 QEC, SLM device, and lattice κ. The UI, CLI, and Python API all load it.
+
+## Photonic ladder HMI
+
+A PLC-style process-control view of the same façade: rungs are beam-evolution
+stages, coils are dual scientific beam monitors, and each logic rung has a
+full-width **EQUIPMENT / LAB MAPPING** row under it. Node selection glows
+`#00FF00` and drives the spectrum analyzer. YAML programs live in
+`configs/ladders/`. See [ladder.md](ladder.md).

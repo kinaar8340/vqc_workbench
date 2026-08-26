@@ -1,0 +1,152 @@
+# Photonic ladder program — VQC Prototype pulsed-beam evolution + lab mapping.
+# Drives the PLC-style HMI and the Workbench() API. Schema 1.
+
+schema: 1
+title: Photonic Ladder Diagram – Beam Evolution + Lab Mapping
+version: 0.3.0
+wavelength_nm: 532.0
+L_max: 8
+grid_size: 64
+scan_active: true
+edit_mode: true
+cycle: 0
+selected_node_id: rung1.pulse_in
+glow_until_trigger: true
+n_pulse_frames: 16
+frame_index: 0
+alarm: ""
+
+rungs:
+  - id: rung1
+    number: 1
+    title: INITIAL
+    stage: initial
+    subtitle: Collimated pulse
+    help: Frames 1–3 axial collimated rainbow pulse; frames 4–5 elongated pulse streak.
+    workbench:
+      kind: identity
+      params: {}
+    contacts:
+      - {id: pulse_in, tag: PULSE_IN, kind: NO, closed: true, help: Input pulse trigger}
+      - {id: shutter, tag: SHUTTER, kind: NO, closed: true, help: Laser shutter interlock}
+      - {id: trig_532, tag: TRIG_532, kind: trigger, closed: true, help: "532 nm fire"}
+    axial:
+      id: axial
+      view: axial
+      title: AXIAL / PHASE-FRONT
+      scale: INTENSITY
+      frame_ids: [1, 2, 3]
+      help: Transverse intensity of the collimated pulse.
+    spatiotemporal:
+      id: st
+      view: spatiotemporal
+      title: SPATIOTEMPORAL / LENGTH
+      scale: INTENSITY
+      frame_ids: [4, 5]
+      help: Longitudinal pulse streak.
+    equipment:
+      - {id: laser, tag: "[LASER_532]", name: 532 nm Laser, kind: laser, help: Source, 532 nm CW/pulsed}
+      - {id: expander, tag: "[BE_01]", name: Beam Expander, kind: expander}
+      - {id: dice, tag: "[DICE_01]", name: Object Dice Stage, kind: stage}
+      - {id: l1, tag: "[L1]", name: Lens L1, kind: lens}
+      - {id: iris, tag: "[IRIS_01]", name: Iris, kind: iris}
+
+  - id: rung2
+    number: 2
+    title: SLM STAGE
+    stage: slm
+    subtitle: Quaternion spiral mask
+    help: Axial vortex / quaternion spiral phase mask + helical vortex propagation length.
+    workbench:
+      kind: spiral_phase
+      params: {ell: 1}
+    contacts:
+      - {id: slm_en, tag: SLM_EN, kind: NO, closed: true, help: SLM enable}
+      - {id: hwp_in, tag: HWP_IN, kind: NO, closed: true, help: Half-wave plate in beam}
+      - {id: phase_ld, tag: PHASE_LD, kind: trigger, closed: true, help: Load phase playlist}
+      - {id: ell_set, tag: ELL_SET, kind: param, closed: true, value: "1", help: Topological charge}
+    axial:
+      id: axial
+      view: axial
+      title: AXIAL / PHASE-FRONT
+      scale: PHASE
+      frame_ids: [6, 7, 8]
+      help: Spiral phase mask on the SLM.
+    spatiotemporal:
+      id: st
+      view: spatiotemporal
+      title: SPATIOTEMPORAL / LENGTH
+      scale: INTENSITY
+      frame_ids: [9, 10]
+      help: Helical vortex along z.
+    equipment:
+      - {id: slm, tag: "[SLM_01]", name: SLM, kind: slm, help: Spatial Light Modulator}
+      - {id: hwp, tag: "[HWP_01]", name: "HWP (λ/2)", kind: hwp}
+      - {id: l3, tag: "[L3]", name: Lens L3, kind: lens}
+      - {id: gpd, tag: "[GPD_01]", name: GPD, kind: detector}
+
+  - id: rung3
+    number: 3
+    title: HELICAL FORMATION
+    stage: helical
+    subtitle: Nested helical wavefronts
+    help: Nested concentric helical wavefronts + multi-helical twisted layered tubes.
+    workbench:
+      kind: trajectoid
+      params: {n_trenches: 8, winding: 2, live: false}
+    contacts:
+      - {id: diff_en, tag: DIFF_EN, kind: NO, closed: true, help: Rotating diffuser}
+      - {id: lcp_in, tag: LCP_IN, kind: NO, closed: true, help: Left-circular polarizer}
+      - {id: twist, tag: TWIST, kind: param, closed: true, value: "3", help: Helical layer count}
+    axial:
+      id: axial
+      view: axial
+      title: AXIAL / PHASE-FRONT
+      scale: INTENSITY
+      frame_ids: [11, 12]
+      help: Concentric nested helical wavefronts.
+    spatiotemporal:
+      id: st
+      view: spatiotemporal
+      title: SPATIOTEMPORAL / LENGTH
+      scale: INTENSITY
+      frame_ids: [13]
+      help: Multi-helical twisted layered tubes.
+    equipment:
+      - {id: diffuser, tag: "[DIFF_01]", name: Rotating Diffuser, kind: diffuser}
+      - {id: l4, tag: "[L4]", name: Lens L4, kind: lens}
+      - {id: lcp, tag: "[LCP_01]", name: LCP, kind: polarizer}
+
+  - id: rung4
+    number: 4
+    title: MULTI-LAYER / DETECTION
+    stage: detect
+    subtitle: Dense helical stack → cameras
+    help: Multi-layer helical dense concentric rings + long nested multi-layer helical beam.
+    workbench:
+      kind: spiral_phase
+      params: {ell: 3}
+    contacts:
+      - {id: cam1_en, tag: CAM1_EN, kind: NO, closed: true, help: CCD arm}
+      - {id: cam2_en, tag: CAM2_EN, kind: NO, closed: true, help: EMCCD arm}
+      - {id: fiber_tx, tag: FIBER_TX, kind: NO, closed: true, help: Online transmission fiber}
+      - {id: vqc_go, tag: VQC_GO, kind: trigger, closed: true, help: Push to analysis node}
+    axial:
+      id: axial
+      view: axial
+      title: AXIAL / PHASE-FRONT
+      scale: INTENSITY
+      frame_ids: [14, 15]
+      help: Dense concentric multi-layer rings.
+    spatiotemporal:
+      id: st
+      view: spatiotemporal
+      title: SPATIOTEMPORAL / LENGTH
+      scale: INTENSITY
+      frame_ids: [16]
+      help: Long nested multi-layer helical beam.
+    equipment:
+      - {id: cam1, tag: "[CAM1]", name: Cam1 (CCD), kind: camera}
+      - {id: cam2, tag: "[CAM2]", name: Cam2 (EMCCD), kind: camera}
+      - {id: fiber, tag: "[FIBER_01]", name: Online Transmission Fiber Path, kind: fiber}
+      - {id: analysis, tag: "[NODE_AX]", name: To Analysis Node, kind: node}

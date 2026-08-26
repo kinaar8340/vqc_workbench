@@ -276,3 +276,8 @@ class Workbench:
         from vqc_workbench.ui.dashboard import launch_dashboard
 
         launch_dashboard(port=port)
+
+    def launch_ladder(self, port: int = 8502, yaml_path: str | Path | None = None) -> None:
+        from vqc_workbench.ui.ladder import launch_ladder
+
+        launch_ladder(port=port, yaml_path=yaml_path)
