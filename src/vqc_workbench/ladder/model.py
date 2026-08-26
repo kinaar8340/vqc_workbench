@@ -220,6 +220,7 @@ class LadderDocument:
     n_pulse_frames: int = 16
     frame_index: int = 0
     alarm: str = ""
+    spectrum_axis: str | None = None  # None = auto from node type; ell | wavelength_nm
     rungs: list[Rung] = field(default_factory=list)
 
     def all_node_ids(self) -> list[str]:
@@ -332,6 +333,7 @@ class LadderDocument:
             "n_pulse_frames": self.n_pulse_frames,
             "frame_index": self.frame_index,
             "alarm": self.alarm,
+            "spectrum_axis": self.spectrum_axis,
             "rungs": [r.as_dict() for r in self.rungs],
         }
 
@@ -352,12 +354,34 @@ class LadderDocument:
             n_pulse_frames=int(data.get("n_pulse_frames", 16)),
             frame_index=int(data.get("frame_index", 0)),
             alarm=str(data.get("alarm", "")),
+            spectrum_axis=data.get("spectrum_axis"),
             rungs=[Rung.from_dict(r) for r in data.get("rungs", [])],
         )
 
 
 def load_ladder(path: str | Path) -> LadderDocument:
     return LadderDocument.from_dict(load_yaml(path))
+
+
+def ladder_preset_dir() -> Path:
+    return workbench_root() / "configs" / "ladders"
+
+
+def list_ladder_presets() -> list[Path]:
+    d = ladder_preset_dir()
+    if not d.is_dir():
+        return []
+    return sorted(d.glob("*.yaml"))
+
+
+def load_ladder_preset(name: str) -> LadderDocument:
+    """Load ``configs/ladders/<name>.yaml`` (with or without .yaml)."""
+    stem = name[:-5] if name.endswith(".yaml") else name
+    path = ladder_preset_dir() / f"{stem}.yaml"
+    if not path.is_file():
+        known = ", ".join(p.stem for p in list_ladder_presets()) or "(none)"
+        raise FileNotFoundError(f"unknown ladder preset {name!r}; known: {known}")
+    return load_ladder(path)
 
 
 def save_ladder(doc: LadderDocument, path: str | Path) -> Path:

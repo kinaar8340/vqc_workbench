@@ -61,6 +61,9 @@
 - YAML ladder programs bound to `Workbench()` (modes, SLM, VQC, HITL)
 - Edit / save / load, cycle scan, static matplotlib HMI + Streamlit
 - Docs: [ladder.md](ladder.md), figure `docs/figures/ladder_hmi.png`
+- Scrollable four-rung Streamlit stack; ell vs wavelength spectrum by node type
+- Prototype YAML presets (`beam_evolution`, `slm_playlist`) + instruction-list export
+- Dual-monitor assets mapped to the 16-frame prototype (`assets/beam_monitors/`)
 
 ## Non-goals
 

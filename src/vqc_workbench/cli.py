@@ -57,8 +57,10 @@ def main(argv: list[str] | None = None) -> int:
     p_lad = sub.add_parser("ladder", help="photonic ladder diagram HMI")
     p_lad.add_argument("--port", type=int, default=8502)
     p_lad.add_argument("--yaml", type=Path, default=None, help="ladder program YAML")
+    p_lad.add_argument("--preset", default=None, help="configs/ladders/<name>.yaml")
     p_lad.add_argument("--render", type=Path, default=None, help="write static HMI PNG and exit")
     p_lad.add_argument("--json", action="store_true", help="print bound ladder summary")
+    p_lad.add_argument("--il", action="store_true", help="print PLC instruction list and exit")
 
     p_cmp = sub.add_parser("compare", help="modal vs full-wave OAM spectra")
     p_cmp.add_argument("--kind", default="binary_grating")
@@ -144,9 +146,23 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "ladder":
-        from vqc_workbench.ladder import LadderEngine, beam_evolution_ladder, load_ladder
+        from vqc_workbench.ladder import (
+            LadderEngine,
+            beam_evolution_ladder,
+            export_instruction_list,
+            load_ladder,
+            load_ladder_preset,
+        )
 
-        doc = load_ladder(args.yaml) if args.yaml else beam_evolution_ladder()
+        if args.preset:
+            doc = load_ladder_preset(args.preset)
+        elif args.yaml:
+            doc = load_ladder(args.yaml)
+        else:
+            doc = beam_evolution_ladder()
+        if args.il:
+            print(export_instruction_list(doc), end="")
+            return 0
         if args.render or args.json:
             import matplotlib
 

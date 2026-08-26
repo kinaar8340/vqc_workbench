@@ -17,6 +17,8 @@ outputs/
 *.npz
 *.png
 !docs/figures/*.png
+!docs/figures/**/*.png
+!src/vqc_workbench/assets/**/*.png
 *.raw
 *.csv
 .ipynb_checkpoints/

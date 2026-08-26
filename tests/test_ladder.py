@@ -111,7 +111,7 @@ def test_frames_are_monitor_rgb():
     ax = axial_for_stage("initial", n=32)
     st = st_for_stage("slm", n=32, ell=1)
     assert ax.shape == (32, 32, 3) and ax.dtype == np.uint8
-    assert st.shape == (32, 32, 3)
+    assert st.ndim == 3 and st.shape[2] == 3 and st.dtype == np.uint8
     helical = axial_for_stage("helical", n=32, layers=3)
     detect = st_for_stage("detect", n=32, layers=4)
     assert helical.shape[-1] == 3 and detect.shape[-1] == 3
@@ -138,7 +138,7 @@ def test_engine_binds_workbench_and_spectrum():
     doc.select("rung1.laser")
     spec_l = LadderEngine(grid_size=32).bind(doc).spectrum
     assert spec_l.axis == "wavelength_nm"
-    assert spec_l.peak_label.startswith("λ=")
+    assert spec_l.peak_label.startswith("wl=")
 
 
 def test_scan_tick_advances_cycle_and_frame():
@@ -165,3 +165,84 @@ def test_static_hmi_render(tmp_path: Path):
     assert path.is_file()
     assert path.stat().st_size > 8_000
     fig.clear()
+
+
+def test_spectrum_axis_laser_vs_structure():
+    from vqc_workbench.ladder.engine import auto_spectrum_axis
+
+    doc = beam_evolution_ladder()
+    doc.grid_size = 32
+    assert auto_spectrum_axis(doc, "rung1.laser") == "wavelength_nm"
+    assert auto_spectrum_axis(doc, "rung1.trig_532") == "wavelength_nm"
+    assert auto_spectrum_axis(doc, "rung2.slm") == "ell"
+    assert auto_spectrum_axis(doc, "rung2.axial") == "ell"
+    eng = LadderEngine(grid_size=32)
+    doc.select("rung2.slm")
+    spec = eng.bind(doc).spectrum
+    assert spec.axis == "ell"
+    doc.spectrum_axis = "wavelength_nm"
+    spec_w = eng.bind(doc).spectrum
+    assert spec_w.axis == "wavelength_nm"
+    assert spec_w.peak_label.startswith("wl=")
+    doc.spectrum_axis = None
+    doc.select("rung1.laser")
+    spec_l = eng.bind(doc).spectrum
+    assert spec_l.axis == "wavelength_nm"
+
+
+def test_presets_and_prototype_sequence():
+    from vqc_workbench.ladder.model import list_ladder_presets, load_ladder_preset
+
+    stems = {p.stem for p in list_ladder_presets()}
+    assert "beam_evolution" in stems
+    assert "slm_playlist" in stems
+    proto = load_ladder_preset("beam_evolution")
+    assert len(proto.rungs) == 4
+    assert proto.selected_node_id == "rung1.pulse_in"
+    slm = load_ladder_preset("slm_playlist")
+    assert slm.selected_node_id == "rung2.slm"
+    assert slm.rungs[1].equipment[0].tag == "[SLM_01]"
+
+
+def test_prototype_physics_frames():
+    from vqc_workbench.ladder.prototype import fr1_3_axial, fr6_8_axial, fr9_10_st, fr11_12_axial
+
+    ax = fr1_3_axial(n=48)
+    assert ax.shape == (48, 48, 3) and ax.dtype == np.uint8
+    slm = fr6_8_axial(n=48)
+    assert slm.shape == (48, 48, 3)
+    st = fr9_10_st(ny=40, nx=64)
+    assert st.shape == (40, 64, 3)
+    nest = fr11_12_axial(n=48)
+    assert nest.shape[-1] == 3
+
+
+def test_monitor_assets_and_hitl_override():
+    from vqc_workbench.ladder.frames import load_monitor_asset, monitor_image
+
+    rgb = load_monitor_asset("slm", "axial")
+    assert rgb is not None and rgb.ndim == 3 and rgb.shape[2] == 3
+    st = load_monitor_asset("initial", "st")
+    assert st is not None and st.shape[1] >= st.shape[0]
+    fake = np.full((10, 12, 3), 7, dtype=np.uint8)
+    out = monitor_image("initial", "axial", n=16, override=fake)
+    assert out.shape == (10, 12, 3) and int(out[0, 0, 0]) == 7
+    doc = beam_evolution_ladder()
+    doc.grid_size = 32
+    eng = LadderEngine(grid_size=32)
+    eng.set_hitl_frame("rung4", axial=fake)
+    rt = eng.bind(doc)
+    assert rt.rungs["rung4"].axial.shape == (10, 12, 3)
+
+
+def test_instruction_list_export():
+    from vqc_workbench.ladder.export import export_instruction_list
+
+    doc = beam_evolution_ladder()
+    text = export_instruction_list(doc)
+    assert "NETWORK 01  INITIAL" in text
+    assert "XIC   PULSE_IN" in text
+    assert "ONS   TRIG_532" in text
+    assert "[LASER_532] -> [BE_01]" in text
+    assert "NETWORK 04" in text
+    assert "OTE   RUNG2_BEAM" in text

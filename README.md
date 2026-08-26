@@ -32,6 +32,7 @@ PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 
 PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
 PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
 PYTHONPATH=src python3 -m vqc_workbench.cli ladder --render docs/figures/ladder_hmi.png
+PYTHONPATH=src python3 -m vqc_workbench.cli ladder --preset slm_playlist --il
 PYTHONPATH=src python3 -m vqc_workbench.cli ladder --port 8502   # PLC-style photonic ladder HMI
 PYTHONPATH=src python3 -m vqc_workbench.cli inverse --kind trajectoid --target-ell -6
 PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8

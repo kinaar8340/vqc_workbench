@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from vqc_workbench.ladder.frames import RGB, axial_for_stage, st_for_stage
+from vqc_workbench.ladder.frames import RGB, monitor_image
 from vqc_workbench.ladder.model import LadderDocument, Rung
 from vqc_workbench.simulation.modal import ModeResult
 
@@ -59,6 +59,34 @@ class LadderRuntime:
     spectrum: SpectrumReadout | None = None
 
 
+WAVELENGTH_NODE_IDS = {"laser", "trig_532"}
+WAVELENGTH_EQUIPMENT_KINDS = {"laser"}
+
+
+def auto_spectrum_axis(doc: LadderDocument, node_id: str | None) -> str:
+    """Laser-class nodes → wavelength; structures / contacts / monitors → ell."""
+    if not node_id:
+        return "ell"
+    local = node_id.split(".", 1)[-1]
+    if local in WAVELENGTH_NODE_IDS:
+        return "wavelength_nm"
+    rung = doc.node_rung(node_id)
+    if rung is not None:
+        for dev in rung.equipment:
+            if dev.id == local and dev.kind in WAVELENGTH_EQUIPMENT_KINDS:
+                return "wavelength_nm"
+    return "ell"
+
+
+def _wavelength_trace(wavelength_nm: float, n: int = 128) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    center = float(wavelength_nm)
+    lo = max(380.0, center - 80.0)
+    hi = min(780.0, center + 80.0)
+    wl = np.linspace(lo, hi, n)
+    y = np.exp(-((wl - center) ** 2) / (2.0 * 4.5**2))
+    return wl, y
+
+
 def _fwhm(x: NDArray, y: NDArray) -> float:
     y = np.asarray(y, dtype=np.float64)
     x = np.asarray(x, dtype=np.float64)
@@ -81,6 +109,20 @@ class LadderEngine:
     def __init__(self, workbench: Any | None = None, grid_size: int | None = None):
         self._wb = workbench
         self.grid_size = grid_size
+        self.hitl_overrides: dict[str, dict[str, RGB]] = {}
+
+    def set_hitl_frame(
+        self,
+        rung_id: str,
+        axial: RGB | None = None,
+        spatiotemporal: RGB | None = None,
+    ) -> None:
+        """Overwrite a rung's monitors with camera / HITL RGB (future live path)."""
+        slot = self.hitl_overrides.setdefault(rung_id, {})
+        if axial is not None:
+            slot["axial"] = axial
+        if spatiotemporal is not None:
+            slot["st"] = spatiotemporal
 
     @property
     def wb(self):
@@ -103,7 +145,9 @@ class LadderEngine:
             if state.alarm:
                 alarms.append(state.alarm)
         doc.alarm = "; ".join(alarms)
-        runtime.spectrum = self.spectrum_for(doc, runtime, doc.selected_node_id)
+        runtime.spectrum = self.spectrum_for(
+            doc, runtime, doc.selected_node_id, axis=doc.spectrum_axis
+        )
         return runtime
 
     def tick(self, doc: LadderDocument) -> None:
@@ -155,8 +199,10 @@ class LadderEngine:
         mask = None if modes is None else modes.phase_mask
         x = None if modes is None else modes.x
         y = None if modes is None else modes.y
-        axial = axial_for_stage(
+        hitl = self.hitl_overrides.get(rung.id, {})
+        axial = monitor_image(
             rung.stage,
+            "axial",
             field=field,
             phase_mask=mask,
             x=x,
@@ -165,8 +211,17 @@ class LadderEngine:
             layers=layers,
             frame=frame_u,
             n=n,
+            override=hitl.get("axial"),
         )
-        st = st_for_stage(rung.stage, ell=ell, layers=layers, frame=frame_u, n=n)
+        st = monitor_image(
+            rung.stage,
+            "st",
+            ell=ell,
+            layers=layers,
+            frame=frame_u,
+            n=n,
+            override=hitl.get("st"),
+        )
         return RungState(
             rung_id=rung.id,
             modes=modes,
@@ -184,35 +239,30 @@ class LadderEngine:
         doc: LadderDocument,
         runtime: LadderRuntime,
         node_id: str | None,
+        axis: str | None = None,
     ) -> SpectrumReadout:
-        if not node_id:
-            return SpectrumReadout(
-                node_id="",
-                node_name="(no selection)",
-                axis="ell",
-                x=np.arange(-doc.L_max, doc.L_max + 1, dtype=np.float64),
-                y=np.zeros(2 * doc.L_max + 1, dtype=np.float64),
-                peak=0.0,
-                peak_label="—",
-                fwhm=0.0,
-            )
-        rung = doc.node_rung(node_id)
-        local = node_id.split(".", 1)[-1]
-        name = doc.node_label(node_id)
+        auto = auto_spectrum_axis(doc, node_id)
+        use = axis or auto
+        if use not in {"ell", "wavelength_nm"}:
+            use = auto
+        name = doc.node_label(node_id) if node_id else "(no selection)"
+        rung = doc.node_rung(node_id) if node_id else None
         state = None if rung is None else runtime.rungs.get(rung.id)
+        extras: dict[str, Any] = {"auto_axis": auto, "axis_mode": "auto" if axis is None else "manual"}
 
-        if rung is not None and local in {"laser"}:
-            wl = np.linspace(480.0, 590.0, 128)
-            y = np.exp(-((wl - float(doc.wavelength_nm)) ** 2) / (2 * 4.5**2))
+        if use == "wavelength_nm":
+            wl, y = _wavelength_trace(float(doc.wavelength_nm))
+            extras["kind"] = None if state is None else state.kind
             return SpectrumReadout(
-                node_id=node_id,
+                node_id=node_id or "",
                 node_name=name,
                 axis="wavelength_nm",
                 x=wl,
                 y=y,
                 peak=float(doc.wavelength_nm),
-                peak_label=f"λ={doc.wavelength_nm:.0f} nm",
+                peak_label=f"wl={doc.wavelength_nm:.0f} nm",
                 fwhm=_fwhm(wl, y),
+                extras=extras,
             )
 
         if state is not None and state.modes is not None:
@@ -220,8 +270,15 @@ class LadderEngine:
             y = np.asarray(modes.intensity, dtype=np.float64)
             x = np.asarray(modes.ell, dtype=np.float64)
             peak_ell = int(modes.dominant_ell())
+            extras.update(
+                {
+                    "expectation_ell": float(modes.expectation_ell()),
+                    "expected_ell": state.expected_ell,
+                    "kind": state.kind,
+                }
+            )
             return SpectrumReadout(
-                node_id=node_id,
+                node_id=node_id or "",
                 node_name=name,
                 axis="ell",
                 x=x,
@@ -229,16 +286,12 @@ class LadderEngine:
                 peak=float(peak_ell),
                 peak_label=f"ell={peak_ell:+d}",
                 fwhm=_fwhm(x, y),
-                extras={
-                    "expectation_ell": float(modes.expectation_ell()),
-                    "expected_ell": state.expected_ell,
-                    "kind": state.kind,
-                },
+                extras=extras,
             )
 
         x = np.arange(-doc.L_max, doc.L_max + 1, dtype=np.float64)
         return SpectrumReadout(
-            node_id=node_id,
+            node_id=node_id or "",
             node_name=name,
             axis="ell",
             x=x,
@@ -246,6 +299,7 @@ class LadderEngine:
             peak=0.0,
             peak_label="—",
             fwhm=0.0,
+            extras=extras,
         )
 
     def step_frame(self, doc: LadderDocument, delta: int = 1) -> None:
