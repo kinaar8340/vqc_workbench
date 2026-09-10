@@ -1,33 +1,30 @@
 # Intellectual Property Notice
 
-**VQC Photonic Workbench** (`vqc_workbench`)  
-Copyright © 2026 Aaron Michael Kinder
+Copyright © 2025–2026 Aaron Michael Kinder
 
-The workbench *integration layer* (structure editor, modal coupling, YAML
-configs, dashboard shell, optional full-wave wrappers) is released under the
-MIT License. See [`LICENSE`](LICENSE).
+This repository is released under the
+**[PolyForm Noncommercial License 1.0.0](LICENSE)** with the patent
+reservation in **[PATENTS.md](PATENTS.md)**.
 
-## Downstream VQC / patent constraints
+Do not treat this as Creative Commons. The previous “CC-BY-NC-SA-4.0
+with additional patent restrictions” notice (on parent VQC repos) was a
+custom paraphrase, not CC-BY-NC-SA-4.0. This workbench previously used
+MIT plus a NOTICE; that split does not hold because the workbench ports
+VQC pipeline pieces. This version is PolyForm-NC. Historical MIT commits
+remain MIT for copyright; 63/913,110 was never licensed.
 
-This package is designed to **import** the existing VQC family. It does **not**
-re-implement the patented Vortex Quaternion Conduit pipeline. When you enable
-optional extras that wrap those repos, **their licenses apply to that path**:
+| Permitted (no extra paperwork) | Requires a written license |
+|--------------------------------|----------------------------|
+| View, fork, and modify for **noncommercial** research, personal study, and public-knowledge experiment | Commercial use of this software |
+| Distribute copies under the same PolyForm-NC terms, with notices | Sublicensing or transfer of the licenses |
+| Academic and hobby use as defined in PolyForm-NC | Production / product deployment |
+| Use of this software under the PolyForm **limited patent license** (claims you would infringe *by using this software* for a permitted purpose) | Practicing the claimed VQC system independently of this software; any commercial patent license |
 
-| Repository | License (as published) | Notes |
-|------------|------------------------|--------|
-| `vqc_proto`, `vqc_sims_public` | CC-BY-NC-SA-4.0 + patent restrictions | US Provisional 63/913,110 |
-| `vqc_demo` | see that repo | intensity-proxy / SLM POC |
-| `flux_hopf_lib` | MIT | quaternion / Hopf / flux primitives |
-| `oam_flux`, `flux_trajectoid`, `hfb`, `qga` | see those repos | lattice, shells, optics, geometry |
+## Patent
 
-Permitted for the VQC extras: non-commercial research with attribution.  
-Commercial use, sublicensing, or production deployment of the VQC core requires
-a written license from the patent holder.
+U.S. Provisional Application **63/913,110**, filed **6 November 2025**.
+Rights in that provisional and in any application claiming the benefit
+of it are reserved except as granted by LICENSE for permitted use of
+this software. Details: [PATENTS.md](PATENTS.md).
 
-Contact: kinaar0@protonmail.com
-
-## Dependency direction
-
-`vqc_workbench` imports the ecosystem. The ecosystem must **never** import
-`vqc_workbench`. Optional backends are discovered at runtime and degrade
-gracefully when a package is absent.
+**Commercial inquiries:** [kinaar0@protonmail.com](mailto:kinaar0@protonmail.com)

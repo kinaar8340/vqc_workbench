@@ -160,6 +160,8 @@ Phase 2 remaining: none of the original interface items. Disk cache is on
 
 ## License
 
-MIT for the workbench integration layer. Optional VQC extras
-(`vqc_proto`, `vqc_sims_public`) remain CC-BY-NC-SA-4.0 with patent
-restrictions (US Prov. 63/913,110). See [IP_NOTICE.md](IP_NOTICE.md).
+**[PolyForm Noncommercial License 1.0.0](LICENSE)**. The workbench
+ports VQC pipeline pieces, so it is not MIT. See
+[IP_NOTICE.md](IP_NOTICE.md) and [PATENTS.md](PATENTS.md).
+Commits previously published under MIT remain MIT for copyright;
+this version is PolyForm Noncommercial. 63/913,110 was never licensed.

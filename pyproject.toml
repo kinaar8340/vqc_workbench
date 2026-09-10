@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "VQC-native photonic workbench: edit metamaterials and gratings, simulate OAM modes, run the Vortex Quaternion Conduit pipeline"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "PolyForm-Noncommercial-1.0.0" }
 authors = [{ name = "kinaar8340" }]
 keywords = [
     "photonics",
@@ -23,7 +23,7 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
