@@ -18,7 +18,7 @@ beside (GitHub: [kinaar8340](https://github.com/kinaar8340)).
 
 | Repo | Role |
 |------|------|
-| **flux_hopf_lib** | Single source of truth for quaternion algebra, Hopf maps, flux lattices. Optional import in `core/geometry.py`. |
+| **flux_hopf_lib** | Single source of truth for quaternion algebra, Hopf maps, flux lattices. Required; `core/geometry.py` re-exports it. |
 | **qga** | Pedagogical Hopf / gauged-lattice book. Design rules, not a runtime dep. |
 | **toe**, **kingdom_come**, **vortex_math**, **invariant_hunt**, **convex_defect** | Medium physics, portals, invariants — constrain metamaterial choices later. |
 | **pic / qvpic** | Persistent-identity conduits; future “memory” layer for adaptive design. |

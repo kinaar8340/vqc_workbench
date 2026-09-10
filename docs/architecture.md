@@ -26,7 +26,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
                │                             │ propagate → QEC →
                │                             │ decode
                ▼                             ▼
-     flux_hopf_lib (optional)      oam_flux / vqc_proto / hfb
+     flux_hopf_lib (required)      oam_flux / vqc_proto / hfb
                                    (optional adapters)
 ```
 
@@ -37,7 +37,7 @@ than replacing commercial PDA tools (Lumerical, OptoCompiler, …).
 | Package | Role | Required? |
 |---------|------|-----------|
 | numpy / scipy / pyyaml | core | yes |
-| flux_hopf_lib | quaternion / Hopf fingerprint | optional (local fallback) |
+| flux_hopf_lib | quaternion / Hopf map | required (`flux-hopf-lib>=0.3.0`) |
 | oam_flux | lattice coupling, vectorized photonics | optional |
 | vqc_proto | Orbital Braille typehead, SLM playlist | optional (local geometry) |
 | vqc_demo | Projector proxy + SLM hologram package | optional (HITL) |

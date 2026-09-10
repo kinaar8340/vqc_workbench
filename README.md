@@ -65,6 +65,7 @@ agree with the modal projector in spectral shape. Dielectric slab
 
 ```bash
 cd ~/Projects/vqc_workbench
+pip install -e ../flux_hopf_lib    # required core (or flux-hopf-lib>=0.3.0)
 pip install -e .
 pip install -e ".[ui,dev]"    # dashboard + tests
 ```
@@ -72,7 +73,6 @@ pip install -e ".[ui,dev]"    # dashboard + tests
 Optional neighbours (never required):
 
 ```bash
-pip install -e ../flux_hopf_lib
 pip install -e ../oam_flux
 pip install -e ../vqc_demo
 pip install -e ../flux_trajectoid

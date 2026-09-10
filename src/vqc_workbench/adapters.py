@@ -120,7 +120,7 @@ def probe_ecosystem() -> EcosystemStatus:
         grcwa=_module_available("grcwa") or _module_available("nannos"),
     )
     if not status.flux_hopf_lib:
-        status.notes["flux_hopf_lib"] = "optional; local quaternion fallback in use"
+        status.notes["flux_hopf_lib"] = "required; install flux-hopf-lib>=0.3.0"
     if not status.meep:
         status.notes["meep"] = "optional FDTD backend not installed; use backend='scalar'"
     if status.grcwa:
