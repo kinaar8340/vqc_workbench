@@ -6,43 +6,82 @@ defects, then push the resulting OAM content through a Vortex Quaternion
 Conduit pipeline.
 
 This is a research prototype, not a drop-in replacement for Lumerical /
-Synopsys OptoCompiler. The fast path is a thin-element modal engine. A
-scalar-diffraction full-wave lite is always on; Meep / RCWA backends fail
-loudly until those solvers are installed.
+Synopsys OptoCompiler. The fast path is a thin-element modal engine.
 
-Workbench **imports** the kinaar8340 stack (`oam_flux`, `vqc_demo`,
-`flux_trajectoid`, …). Those packages must never import this one.
+**How to read a run.** Geometry and arithmetic stay on
+[qga](https://github.com/kinaar8340/qga). A workbench result is a
+**Software fact** (what this code returns today) or a **Model**
+(a conduit / photonic construction). It is not a theorem and not a ToE.
+
+**License.** [PolyForm Noncommercial 1.0.0](LICENSE) plus patent notice
+US 63/913,110. See [IP_NOTICE.md](IP_NOTICE.md) and [PATENTS.md](PATENTS.md).
+
+## Five minutes
+
+No sibling checkouts. Shared Hopf / quaternion primitives come from PyPI.
+
+```bash
+python3 -m pip install "flux-hopf-lib>=0.3.0"
+python3 -m pip install -e .
+vqc-workbench simulate --kind spiral_phase --ell 3
+vqc-workbench run-vqc --kind identity --payload Hi
+vqc-workbench export-slm --kind orbital_braille --out outputs/slm
+```
+
+Expected (Software facts):
+
+```text
+kind=spiral_phase expected_ell=+3  dominant_ell=+3  ⟨ℓ⟩=3.00
+```
+
+```text
+"fidelity": 1.0
+"payload_match": true
+"recovered_payload": "Hi"
+```
+
+```text
+wrote outputs/slm/slm_phase.npy
+```
+
+Identity `run-vqc` recovering `Hi` at fidelity 1.0 is the conduit fact.
+Orbital Braille → SLM export is the hardware-adjacent artifact.
+A spiral plate is a **mode shifter**; do not expect the same payload to
+round-trip through it unless you add `--compensate` (below).
+
+## Optional neighbors
+
+Workbench **imports** optional packages when they are present
+(`oam_flux`, `vqc_demo`, `flux_trajectoid`, …). Those packages must
+never import this one. They are not required for the five-minute path.
 `vqc_proto/src/photonics.py` is not imported (import-time side effects).
 
-## First 10 minutes
-
-From the repo root (with the package on `PYTHONPATH` or `pip install -e .`):
-
 ```bash
-PYTHONPATH=src python3 -m vqc_workbench.cli status
-PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind spiral_phase --ell 3
-PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind identity --payload Hi
+python3 -m pip install -e ".[ui,dev]"    # dashboard + tests
+# optional, only if you already have the clones:
+# python3 -m pip install -e ../oam_flux
+# python3 -m pip install -e ../vqc_demo
+# python3 -m pip install -e ../flux_trajectoid
 ```
 
-A spiral plate is a **mode shifter**, so the same payload through the grating
-does not round-trip until you compensate with a matched filter:
+`vqc-workbench status` lists neighboring checkouts if they exist.
+
+## More commands
+
+A spiral plate needs a matched filter before payload recovery:
 
 ```bash
-PYTHONPATH=src python3 -m vqc_workbench.cli run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
-PYTHONPATH=src python3 -m vqc_workbench.cli compare --kind binary_grating --backends modal,scalar
-PYTHONPATH=src python3 -m vqc_workbench.cli dashboard   # needs: pip install -e ".[ui]"
-PYTHONPATH=src python3 -m vqc_workbench.cli ladder --render docs/figures/ladder_hmi.png
-PYTHONPATH=src python3 -m vqc_workbench.cli ladder --preset slm_playlist --il
-PYTHONPATH=src python3 -m vqc_workbench.cli ladder --port 8502   # PLC-style photonic ladder HMI
-PYTHONPATH=src python3 -m vqc_workbench.cli inverse --kind trajectoid --target-ell -6
-PYTHONPATH=src python3 -m vqc_workbench.cli couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
-PYTHONPATH=src python3 -m vqc_workbench.cli hitl --payload Hi --kind spiral_phase --channel projector
-PYTHONPATH=src python3 -m vqc_workbench.cli simulate --kind trajectoid --live --payload-hash vqc
+vqc-workbench run-vqc --kind spiral_phase --ell 3 --payload Hi --compensate
+vqc-workbench compare --kind binary_grating --backends modal,scalar
+vqc-workbench dashboard   # needs: pip install -e ".[ui]"
+vqc-workbench ladder --render docs/figures/ladder_hmi.png
+vqc-workbench ladder --preset slm_playlist --il
+vqc-workbench ladder --port 8502   # PLC-style photonic ladder HMI
+vqc-workbench inverse --kind trajectoid --target-ell -6
+vqc-workbench couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
+vqc-workbench hitl --payload Hi --kind spiral_phase --channel projector
+vqc-workbench simulate --kind trajectoid --live --payload-hash vqc
 ```
-
-`status` lists neighboring checkouts under `~/Projects`. `simulate` prints the
-OAM spectrum (including **expected ℓ** from the structure parameters).
-`run-vqc` on `identity` should recover `Hi` at fidelity 1.0.
 
 A trajectoid with 8 trenches and winding 2 piles onto ℓ = −6
 (`winding − n_trenches`). Walkthrough:
@@ -61,24 +100,6 @@ agree with the modal projector in spectral shape. Dielectric slab
 (`thin_plate_3d`) at res=12 with Ex and a 0.7λ n(x,y) plate **peaks at
 ℓ=+1** (cosine 0.709). See [docs/meep_validation.md](docs/meep_validation.md).
 
-## Install
-
-```bash
-cd ~/Projects/vqc_workbench
-pip install -e ../flux_hopf_lib    # required core (or flux-hopf-lib>=0.3.0)
-pip install -e .
-pip install -e ".[ui,dev]"    # dashboard + tests
-```
-
-Optional neighbours (never required):
-
-```bash
-pip install -e ../oam_flux
-pip install -e ../vqc_demo
-pip install -e ../flux_trajectoid
-# vqc_proto, hfb — discovered if importable
-```
-
 ## Quick start
 
 ```python
@@ -94,9 +115,12 @@ result = wb.run_vqc(wb.create_structure("identity"), b"Hi")
 print(result.fidelity, result.recovered_payload)
 
 braille = wb.create_orbital_braille(n_orbs=4)
-wb.export_slm(braille, "outputs/slm_phase.npy")
+wb.export_slm(braille, "outputs/slm")
+```
 
-# live ecosystem adapters (skip if the package is missing)
+Live adapters skip if the optional package is missing:
+
+```python
 wb.couple_to_lattice(grating, kappa=0.85, steps=8, ell=3)
 wb.hitl("Hi", grating, channel="projector")
 live = wb.create_trajectoid(payload_hash="vqc", winding=2, live=True)
@@ -108,6 +132,7 @@ CLI:
 vqc-workbench status
 vqc-workbench simulate --kind spiral_phase --ell 3
 vqc-workbench run-vqc --kind identity --payload Hi
+vqc-workbench export-slm --kind orbital_braille --out outputs/slm
 vqc-workbench couple --kind spiral_phase --ell 3
 vqc-workbench hitl --payload Hi --channel projector
 vqc-workbench dashboard
