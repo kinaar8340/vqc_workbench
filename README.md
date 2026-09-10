@@ -18,10 +18,13 @@ US 63/913,110. See [IP_NOTICE.md](IP_NOTICE.md) and [PATENTS.md](PATENTS.md).
 
 ## Five minutes
 
-No sibling checkouts. Shared Hopf / quaternion primitives come from PyPI.
+This path does not use `kingdom_come`, `toe`, or `hfb`. Shared Hopf /
+quaternion primitives come from `flux-hopf-lib` (PyPI or a local clone).
 
 ```bash
 python3 -m pip install "flux-hopf-lib>=0.3.0"
+# local ecosystem equivalent (same package, not the TOE stack):
+# python3 -m pip install -e ../flux_hopf_lib
 python3 -m pip install -e .
 vqc-workbench simulate --kind spiral_phase --ell 3
 vqc-workbench run-vqc --kind identity --payload Hi
@@ -45,9 +48,23 @@ wrote outputs/slm/slm_phase.npy
 ```
 
 Identity `run-vqc` recovering `Hi` at fidelity 1.0 is the conduit fact.
-Orbital Braille → SLM export is the hardware-adjacent artifact.
-A spiral plate is a **mode shifter**; do not expect the same payload to
-round-trip through it unless you add `--compensate` (below).
+Orbital Braille → SLM export is the hardware-adjacent artifact a specialist
+can reject on the merits. A spiral plate is a **mode shifter**; do not
+expect the same payload to round-trip through it unless you add
+`--compensate` (below).
+
+## What you can reject
+
+Kill the modal / SLM path without reading QGA or opening the portal.
+
+- **Not Lumerical / OptoCompiler.** Thin-element modal engine only.
+- Identity fidelity is a **Software fact** about the codec, not a coherent
+  free-space BER.
+- Projector HITL (`vqc_demo`) is an incoherent RGB proxy for framing and
+  QEC. It is not a laser + phase-only SLM channel. Do not load projector
+  frames onto an SLM. Details: [docs/hitl.md](docs/hitl.md).
+- `couple` / `oam_flux` lattice numbers are optional **Model** extras.
+  They are not required to accept or reject the Braille SLM export.
 
 ## Optional neighbors
 
@@ -78,7 +95,7 @@ vqc-workbench ladder --render docs/figures/ladder_hmi.png
 vqc-workbench ladder --preset slm_playlist --il
 vqc-workbench ladder --port 8502   # PLC-style photonic ladder HMI
 vqc-workbench inverse --kind trajectoid --target-ell -6
-vqc-workbench couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8
+vqc-workbench couple --kind spiral_phase --ell 3 --kappa 0.85 --steps 8   # optional Model (oam_flux)
 vqc-workbench hitl --payload Hi --kind spiral_phase --channel projector
 vqc-workbench simulate --kind trajectoid --live --payload-hash vqc
 ```
@@ -133,7 +150,7 @@ vqc-workbench status
 vqc-workbench simulate --kind spiral_phase --ell 3
 vqc-workbench run-vqc --kind identity --payload Hi
 vqc-workbench export-slm --kind orbital_braille --out outputs/slm
-vqc-workbench couple --kind spiral_phase --ell 3
+vqc-workbench couple --kind spiral_phase --ell 3   # optional Model (oam_flux)
 vqc-workbench hitl --payload Hi --channel projector
 vqc-workbench dashboard
 vqc-workbench ladder --render docs/figures/ladder_hmi.png
